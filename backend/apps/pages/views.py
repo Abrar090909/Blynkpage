@@ -142,22 +142,24 @@ class ProjectStreamView(View):
             html_chunks = []
             try:
                 # If enhanced_brief hasn't been generated yet, enhance now inside the stream
-                if project.enhanced_brief == project.original_prompt:
-                    yield "data: [STATUS] Analyzing brief and brand voice…\n\n"
-                    try:
-                        enhanced = enhance_prompt(project.original_prompt)
-                        project.enhanced_brief = enhanced
-                        project.save(update_fields=['enhanced_brief'])
-                    except Exception as enh_err:
-                        logger.warning("Brief enhancement fallback: %s", enh_err)
+                yield "data: [STATUS] Building your custom page with Gemini Flash…\n\n"
 
-                yield "data: [STATUS] Generating page with Gemini Flash…\n\n"
+                is_first_chunk = True
+                for chunk in stream_generation(project.original_prompt):
+                    if not chunk:
+                        continue
+                    # Strip opening markdown code fences on the fly
+                    if is_first_chunk:
+                        chunk = chunk.replace('```html', '').replace('```', '').lstrip()
+                        is_first_chunk = False
+                    elif '```' in chunk:
+                        chunk = chunk.replace('```', '')
 
-                for chunk in stream_generation(project.enhanced_brief):
-                    html_chunks.append(chunk)
-                    # Escape newlines so each SSE message is a single line
-                    safe_chunk = chunk.replace('\n', '\\n')
-                    yield f"data: {safe_chunk}\n\n"
+                    if chunk:
+                        html_chunks.append(chunk)
+                        # Escape newlines so each SSE message is a single line
+                        safe_chunk = chunk.replace('\n', '\\n')
+                        yield f"data: {safe_chunk}\n\n"
 
                 # Save full HTML cleanly stripped of any markdown fences
                 full_html = strip_markdown_fences(''.join(html_chunks))

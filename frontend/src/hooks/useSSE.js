@@ -20,6 +20,7 @@ export function useSSE() {
   const [error, setError] = useState(null)
   const [statusMessage, setStatusMessage] = useState('')
   const sourceRef = useRef(null)
+  const codeRef = useRef('')
 
   const stopStream = useCallback(() => {
     if (sourceRef.current) {
@@ -34,6 +35,7 @@ export function useSSE() {
     stopStream()
 
     // Reset state for a fresh stream
+    codeRef.current = ''
     setCode('')
     setIsDone(false)
     setError(null)
@@ -72,13 +74,21 @@ export function useSSE() {
 
       // Unescape the newlines encoded on the server side
       const chunk = raw.replace(/\\n/g, '\n')
-      setCode(prev => prev + chunk)
+      codeRef.current = (codeRef.current || '') + chunk
+      setCode(codeRef.current)
     }
 
     es.onerror = () => {
-      // If code was already received and closing, don't set error
       setIsStreaming(false)
       setStatusMessage('')
+      // If code was already received or closing, do not show false error banner
+      if (codeRef.current && codeRef.current.length > 50) {
+        if (es.readyState !== EventSource.CLOSED) {
+          es.close()
+        }
+        sourceRef.current = null
+        return
+      }
       if (es.readyState === EventSource.CLOSED) {
         sourceRef.current = null
         return

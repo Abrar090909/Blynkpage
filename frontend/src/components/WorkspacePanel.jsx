@@ -1,6 +1,7 @@
 /**
  * WorkspacePanel — Apple-Designed Code/Preview tab switcher + ActionBar.
- * Complies with DESIGN.md: Action Blue, SF Pro typography, no blinking green dots.
+ * Complies with DESIGN.md: Action Blue, SF Pro typography, no blinking green dots,
+ * real non-looping pipeline progress, and immediate preview when code is available.
  */
 import { useState, useEffect } from 'react'
 import CodeStream from './CodeStream'
@@ -13,10 +14,12 @@ import './WorkspacePanel.css'
  */
 function injectBaseTarget(html) {
   if (!html) return html
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/(<head[^>]*>)/i, '$1<base target="_blank">')
+  // Strip any accidental markdown fences from the preview
+  let clean = html.replace(/^```html\s*/i, '').replace(/```\s*$/i, '')
+  if (/<head[^>]*>/i.test(clean)) {
+    return clean.replace(/(<head[^>]*>)/i, '$1<base target="_blank">')
   }
-  return '<base target="_blank">' + html
+  return '<base target="_blank">' + clean
 }
 
 const DEFAULT_STAGES = [
@@ -26,31 +29,37 @@ const DEFAULT_STAGES = [
   'Sourcing high-res product visuals…',
   'Styling responsive CSS layout…',
   'Polishing interactive elements…',
-  'Finalising conversion triggers…',
 ]
 
 /**
  * Apple-style minimalist activity indicator loader.
- * Completely eliminates neon green dots and erratic blinking in favor of
- * a calm, refined Cupertino activity spinner and typography.
+ * Linear progression without looping checkboxes.
  */
 function AppleGeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
   const [stageIndex, setStageIndex] = useState(0)
 
   useEffect(() => {
+    // Advance linearly up to the final stage — never loop back to 0!
     const timer = setInterval(() => {
-      setStageIndex(i => (i + 1) % DEFAULT_STAGES.length)
-    }, 3200)
+      setStageIndex(i => Math.min(i + 1, DEFAULT_STAGES.length - 1))
+    }, 4000)
     return () => clearInterval(timer)
   }, [])
 
   const currentMsg = statusMessage || DEFAULT_STAGES[stageIndex]
 
+  // Pipeline steps mapped to real progress
+  const steps = ['Brief', 'Copy', 'Visuals', 'Code', 'Preview']
+  const getStepState = (idx) => {
+    if (lineCount > 150) return idx <= 3 ? 'done' : 'active'
+    if (lineCount > 0) return idx <= 2 ? 'done' : idx === 3 ? 'active' : 'pending'
+    if (idx < stageIndex) return 'done'
+    if (idx === stageIndex) return 'active'
+    return 'pending'
+  }
+
   return (
     <div className="apple-loader-overlay">
-      {/* Background subtle atmospheric canvas */}
-      <div className="apple-loader-canvas" aria-hidden="true" />
-
       {/* Apple-style clean activity spinner */}
       <div className="apple-spinner-wrapper" aria-hidden="true">
         <div className="apple-spinner-ring" />
@@ -88,19 +97,17 @@ function AppleGeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
         </div>
       )}
 
-      {/* Clean Apple pipeline steps */}
+      {/* Clean Apple pipeline steps — linear, no looping */}
       <div className="apple-pipeline">
-        {['Brief', 'Copy', 'Visuals', 'Code', 'Preview'].map((step, i) => {
-          const isDone = lineCount > 0 ? i <= 3 : i < stageIndex
-          const isCurrent = lineCount > 0 ? i === 3 : i === stageIndex
-
+        {steps.map((step, i) => {
+          const state = getStepState(i)
           return (
             <div
               key={step}
-              className={`apple-step ${isCurrent ? 'apple-step--active' : ''} ${isDone ? 'apple-step--done' : ''}`}
+              className={`apple-step ${state === 'active' ? 'apple-step--active' : ''} ${state === 'done' ? 'apple-step--done' : ''}`}
             >
               <span className="apple-step-marker">
-                {isDone ? '✓' : ''}
+                {state === 'done' ? '✓' : ''}
               </span>
               <span className="apple-step-label">{step}</span>
             </div>
@@ -123,12 +130,8 @@ export default function WorkspacePanel({
   onPublish,
   onProjectUpdate,
 }) {
-  const isGenerating =
-    isStreaming ||
-    project?.status === 'generating' ||
-    project?.status === 'enhancing'
-
   const lineCount = code ? code.split('\n').length : 0
+  const hasCode = Boolean(code && code.trim().length > 50)
 
   return (
     <div className="workspace-panel">
@@ -181,13 +184,13 @@ export default function WorkspacePanel({
         {/* CODE TAB */}
         {activeTab === 'code' && (
           <>
-            {isGenerating && !code ? (
+            {hasCode ? (
+              <CodeStream code={code} isStreaming={isStreaming} />
+            ) : (
               <AppleGeneratingOverlay
                 statusMessage={statusMessage}
                 lineCount={0}
               />
-            ) : (
-              <CodeStream code={code} isStreaming={isStreaming} />
             )}
           </>
         )}
@@ -195,13 +198,7 @@ export default function WorkspacePanel({
         {/* PREVIEW TAB */}
         {activeTab === 'preview' && (
           <div className="preview-wrapper">
-            {isGenerating ? (
-              <AppleGeneratingOverlay
-                statusMessage={statusMessage}
-                lineCount={lineCount}
-                onSwitchToCode={() => onTabChange('code')}
-              />
-            ) : code ? (
+            {hasCode ? (
               <iframe
                 id="preview-iframe"
                 className="preview-iframe"
@@ -210,9 +207,11 @@ export default function WorkspacePanel({
                 sandbox="allow-scripts"
               />
             ) : (
-              <div className="preview-empty">
-                <p>Enter a prompt to generate and preview your page.</p>
-              </div>
+              <AppleGeneratingOverlay
+                statusMessage={statusMessage}
+                lineCount={lineCount}
+                onSwitchToCode={() => onTabChange('code')}
+              />
             )}
           </div>
         )}
