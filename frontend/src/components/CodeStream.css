@@ -1,0 +1,102 @@
+/* ─── CodeStream ─────────────────────────────────────────────────────────── */
+
+.code-stream-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: #0D0D16;
+}
+
+.code-stream-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.code-stream-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.code-stream-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 11px;
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.code-stream-line-count {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.code-stream-pre {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-5) var(--space-6);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: #C9D1D9;
+  white-space: pre;
+  tab-size: 2;
+}
+
+/* Simple token colorisation without a library */
+.code-stream-pre code {
+  font-family: inherit;
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────────── */
+.code-stream-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #0D0D16;
+}
+
+.code-stream-empty-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  max-width: 320px;
+  width: 100%;
+}
+
+.code-stream-placeholder-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+@keyframes shimmer {
+  0%   { opacity: 0.03; }
+  50%  { opacity: 0.08; }
+  100% { opacity: 0.03; }
+}
+
+.placeholder-bar {
+  height: 10px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  animation: shimmer 1.8s ease infinite;
+}
+
+.code-stream-empty-inner p {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}

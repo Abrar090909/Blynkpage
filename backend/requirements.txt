@@ -1,0 +1,7 @@
+django>=6.0
+djangorestframework>=3.16
+google-generativeai>=0.8
+psycopg2-binary>=2.9
+python-decouple>=3.8
+whitenoise>=6.12
+django-cors-headers>=4.9

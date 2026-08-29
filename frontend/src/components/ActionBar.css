@@ -1,0 +1,45 @@
+/* ─── Action Bar ─────────────────────────────────────────────────────────── */
+
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: nowrap;
+}
+
+.action-btn {
+  white-space: nowrap;
+}
+
+.action-btn-wrapper {
+  position: relative;
+}
+
+.action-btn--coming-soon {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.coming-soon-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(245,158,11,0.2);
+  color: #F59E0B;
+  border-radius: 100px;
+  padding: 1px 5px;
+}
+
+.meta-icon {
+  font-family: Georgia, serif;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Reuse the spinner from global */
+.btn-spinner {
+  width: 12px;
+  height: 12px;
+  border-width: 1.5px;
+}
