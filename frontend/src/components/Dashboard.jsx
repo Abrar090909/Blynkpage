@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useSSE } from '../hooks/useSSE'
+import { API_BASE } from '../config'
 import ChatPanel from './ChatPanel'
 import WorkspacePanel from './WorkspacePanel'
 import './Dashboard.css'
@@ -21,7 +22,7 @@ export default function Dashboard() {
   // Fetch project data
   const loadProject = useCallback(async () => {
     try {
-      const res = await fetch(`/api/projects/${projectId}/`)
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}/`)
       if (!res.ok) throw new Error(`Failed to load project (${res.status})`)
       const data = await res.json()
       setProject(data)
@@ -59,7 +60,7 @@ export default function Dashboard() {
   const handleRefinement = async (message) => {
     // POST refinement, then start a fresh stream
     try {
-      const res = await fetch(`/api/projects/${projectId}/chat/`, {
+      const res = await fetch(`${API_BASE}/api/projects/${projectId}/chat/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
@@ -74,7 +75,7 @@ export default function Dashboard() {
   }
 
   const handlePublish = async () => {
-    const res = await fetch(`/api/projects/${projectId}/publish/`, {
+    const res = await fetch(`${API_BASE}/api/projects/${projectId}/publish/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     })

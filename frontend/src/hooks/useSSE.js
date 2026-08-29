@@ -12,6 +12,7 @@
  *   stopStream    — manually close the connection
  */
 import { useState, useRef, useCallback } from 'react'
+import { API_BASE } from '../config'
 
 export function useSSE() {
   const [code, setCode] = useState('')
@@ -39,10 +40,10 @@ export function useSSE() {
     setCode('')
     setIsDone(false)
     setError(null)
-    setStatusMessage('Connecting to Gemini 3.6 Flash pipeline…')
+    setStatusMessage('Building your custom page…')
     setIsStreaming(true)
 
-    const url = `/api/projects/${projectId}/stream/`
+    const url = `${API_BASE}/api/projects/${projectId}/stream/`
     const es = new EventSource(url)
     sourceRef.current = es
 

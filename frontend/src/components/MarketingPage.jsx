@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { API_BASE } from '../config'
 import './MarketingPage.css'
 
 const EXAMPLE_PROMPTS = [
@@ -33,7 +34,7 @@ export default function MarketingPage() {
     setError('')
 
     try {
-      const res = await fetch('/api/projects/', {
+      const res = await fetch(`${API_BASE}/api/projects/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: trimmed }),
