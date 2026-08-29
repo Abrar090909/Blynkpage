@@ -93,21 +93,38 @@ Be specific. Add sharp, realistic details that make this brand feel like a real 
 """.strip()
 
 
+def _get_model_candidates() -> list[str]:
+    """Return an ordered list of flash models to attempt with failover."""
+    primary = getattr(settings, 'GEMINI_MODEL', 'gemini-3.7-flash')
+    alternates = ['gemini-3.7-flash', 'gemini-3.6-flash']
+    models = [primary] + [m for m in alternates if m != primary]
+    return models
+
+
 def enhance_prompt(raw_prompt: str) -> str:
     """
     Non-streamed Gemini call to expand a thin user prompt into a structured brief.
-    Returns the brief as a plain-text string.
+    Includes automatic failover across active Flash models if quota is reached.
     """
     client = _get_client()
-    response = client.models.generate_content(
-        model=settings.GEMINI_MODEL,
-        contents=ENHANCEMENT_PROMPT.format(raw_prompt=raw_prompt),
-        config=types.GenerateContentConfig(
-            temperature=0.7,
-            max_output_tokens=1024,
-        ),
-    )
-    return response.text.strip()
+    last_error = None
+
+    for model_name in _get_model_candidates():
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=ENHANCEMENT_PROMPT.format(raw_prompt=raw_prompt),
+                config=types.GenerateContentConfig(
+                    temperature=0.7,
+                    max_output_tokens=1024,
+                ),
+            )
+            return response.text.strip()
+        except Exception as e:
+            logger.warning("enhance_prompt failed with %s: %s, trying fallback...", model_name, e)
+            last_error = e
+
+    raise last_error or RuntimeError("All model attempts failed.")
 
 
 # ─── Generation step (real-time streaming) ───────────────────────────────────
@@ -141,24 +158,30 @@ def stream_generation(
 ) -> Generator[str, None, None]:
     """
     Synchronous generator that streams HTML chunks from Gemini's streaming API in real time.
-    Compatible with Django WSGI's StreamingHttpResponse.
+    Includes automatic model failover if one model hits quota or capacity limits.
     """
     client = _get_client()
     prompt = _build_generation_prompt(enhanced_brief, refinement_instruction, current_html)
+    last_error = None
 
-    try:
-        response_stream = client.models.generate_content_stream(
-            model=settings.GEMINI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.75,
-                max_output_tokens=32768,
-            ),
-        )
-        for chunk in response_stream:
-            if chunk.text:
-                yield chunk.text
+    for model_name in _get_model_candidates():
+        try:
+            response_stream = client.models.generate_content_stream(
+                model=model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.75,
+                    max_output_tokens=32768,
+                ),
+            )
+            for chunk in response_stream:
+                if chunk.text:
+                    yield chunk.text
+            return  # Stream succeeded completely
 
-    except Exception as e:
-        logger.exception("Gemini generation stream error: %s", e)
-        yield f"<!-- GENERATION ERROR: {e} -->"
+        except Exception as e:
+            logger.warning("stream_generation failed with %s: %s, trying alternate model...", model_name, e)
+            last_error = e
+
+    logger.exception("All Gemini stream attempts failed: %s", last_error)
+    yield f"<!-- GENERATION ERROR: {last_error} -->"
