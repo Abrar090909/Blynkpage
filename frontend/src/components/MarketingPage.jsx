@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { API_BASE } from '../config'
+import DarkVeil from './DarkVeil'
 import './MarketingPage.css'
 
 const EXAMPLE_PROMPTS = [
@@ -62,9 +63,17 @@ export default function MarketingPage() {
 
   return (
     <div className="vetra-root">
-      {/* Background Starfield & Glowing Horizon */}
+      {/* Dynamic Animated DarkVeil Background (Orange) */}
       <div className="vetra-bg" aria-hidden="true">
-        <div className="stars-layer" />
+        <DarkVeil
+          hueShift={28}
+          noiseIntensity={0.02}
+          scanlineIntensity={0.04}
+          speed={0.35}
+          warpAmount={0.25}
+          resolutionScale={1}
+        />
+        <div className="darkveil-vignette" />
         <div className="horizon-glow-back" />
         <div className="horizon-curve" />
       </div>
