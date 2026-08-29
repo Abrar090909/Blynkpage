@@ -1,11 +1,22 @@
-/* ─── Apple Workspace Panel (DESIGN.md) ────────────────────────────────── */
+/* ─── Workspace Panel (Desktop, Tablet, Phone, Fullscreen) ─────────────────── */
 
 .workspace-panel {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--color-bg);
+  background: var(--mono-bg, #09090b);
+  position: relative;
+}
+
+/* Fullscreen Mode takeover */
+.workspace-panel--fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #09090b !important;
 }
 
 /* ─── Header / Sub-Nav Bar ────────────────────────────────────────────────── */
@@ -13,18 +24,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-elevated);
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #111115;
   flex-shrink: 0;
   height: 48px;
-  gap: 16px;
+  gap: 12px;
 }
 
-/* ─── Segmented Tabs ─────────────────────────────────────────────────────── */
+/* ─── Segmented Code / Preview Tabs ───────────────────────────────────────── */
 .workspace-tabs {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   align-items: center;
   height: 100%;
 }
@@ -32,46 +43,131 @@
 .workspace-tab {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  color: var(--color-text-muted);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-weight: 400;
+  color: #71717a;
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
   padding: 0 12px;
   cursor: pointer;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  transition: color 0.15s ease, border-color 0.15s ease;
   height: 100%;
 }
 
 .workspace-tab:hover {
-  color: var(--color-text-primary);
+  color: #ffffff;
 }
 
 .workspace-tab--active {
-  color: var(--color-text-primary);
-  border-bottom-color: var(--color-primary); /* Action Blue #0066cc */
+  color: #ffffff;
+  border-bottom-color: #ffffff;
 }
 
-/* Small rotating spinner inside the tab during stream (replaces green dot) */
 .apple-tab-spinner {
   width: 10px;
   height: 10px;
   border: 1.5px solid rgba(255, 255, 255, 0.2);
-  border-top-color: var(--color-primary-on-dark);
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: apple-spin 0.8s linear infinite;
 }
 
 .preview-status-pill {
-  font-size: 11px;
-  color: var(--color-primary-on-dark);
-  background: var(--color-primary-dim);
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  letter-spacing: 0;
+  font-size: 10.5px;
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 7px;
+  border-radius: 9999px;
+}
+
+/* ─── Viewport Device Switcher (Desktop, Tablet, Phone) ───────────────────── */
+.viewport-switcher {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.viewport-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #71717a;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.viewport-btn:hover {
+  color: #ffffff;
+}
+
+.viewport-btn--active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ─── Header Right Actions ────────────────────────────────────────────────── */
+.workspace-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-fullscreen-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-fullscreen-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.btn-fullscreen-toggle--active {
+  background: #ffffff;
+  color: #000000;
+}
+
+.btn-exit-fullscreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-exit-fullscreen:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* ─── Content Area ───────────────────────────────────────────────────────── */
@@ -80,22 +176,109 @@
   overflow: hidden;
   position: relative;
   min-height: 0;
+  background: #09090b;
 }
 
 .workspace-error {
-  background: rgba(255, 69, 58, 0.1);
-  border-bottom: 1px solid rgba(255, 69, 58, 0.25);
-  padding: 10px 20px;
+  background: rgba(239, 68, 68, 0.12);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+  padding: 8px 16px;
   font-size: 13px;
-  color: var(--color-error);
+  color: #f87171;
 }
 
-/* ─── Preview Iframe ─────────────────────────────────────────────────────── */
+/* ─── Preview Stage & Responsive Device Frames ───────────────────────────── */
 .preview-wrapper {
   width: 100%;
   height: 100%;
-  background: #ffffff;
+  background: #0c0c0e;
+  overflow: hidden;
   position: relative;
+}
+
+.preview-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Desktop Frame */
+.device-frame--desktop {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #ffffff;
+  border-radius: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Tablet Frame (768px) */
+.device-frame--tablet {
+  width: 768px;
+  max-width: 100%;
+  height: 100%;
+  max-height: 94vh;
+  border: 10px solid #1f1f26;
+  border-radius: 24px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Phone Frame (375px, realistic curved bezel & notch) */
+.device-frame--phone {
+  width: 375px;
+  max-width: 100%;
+  height: 740px;
+  max-height: 92vh;
+  border: 11px solid #1f1f26;
+  border-radius: 42px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  position: relative;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Phone Notch Island */
+.phone-notch-island {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 105px;
+  height: 22px;
+  background: #1f1f26;
+  border-radius: 20px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.notch-camera {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0d0d12;
+}
+
+.notch-speaker {
+  width: 36px;
+  height: 3.5px;
+  border-radius: 4px;
+  background: #2b2b36;
 }
 
 .preview-iframe {
@@ -103,20 +286,10 @@
   height: 100%;
   border: none;
   display: block;
+  background: #ffffff;
 }
 
-.preview-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--color-text-muted);
-  font-size: 15px;
-  background: var(--color-bg);
-}
-
-/* ─── Apple Activity Loader (NO GREEN DOTS) ──────────────────────────────── */
+/* ─── Clean Activity Loader Overlay ──────────────────────────────────────── */
 .apple-loader-overlay {
   position: absolute;
   inset: 0;
@@ -124,169 +297,180 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
-  background: var(--color-bg);
+  gap: 20px;
+  background: #09090b;
   z-index: 10;
   overflow: hidden;
-  animation: fadeIn 0.3s ease;
-}
-
-/* Apple Cupertino 38px Precision Spinner */
-@keyframes apple-spin {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 .apple-spinner-wrapper {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .apple-spinner-ring {
-  width: 38px;
-  height: 38px;
-  border: 3px solid rgba(255, 255, 255, 0.15);
-  border-top-color: #2997ff;
-  border-right-color: #2997ff;
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #ffffff;
   border-radius: 50%;
-  animation: apple-spin 0.8s linear infinite !important;
-  display: block;
+  animation: apple-spin 0.75s linear infinite;
 }
 
-/* Header & Status Typography */
+@keyframes apple-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .apple-loader-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
   text-align: center;
+  max-width: 380px;
 }
 
 .apple-loader-badge {
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--color-primary-on-dark);
-  background: var(--color-primary-dim);
-  border: 1px solid rgba(41, 151, 255, 0.25);
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
+  color: #71717a;
+  display: block;
+  margin-bottom: 6px;
 }
 
 .apple-loader-title {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
-  letter-spacing: -0.025em;
-  color: var(--color-text-primary);
+  color: #ffffff;
+  margin: 0 0 6px;
 }
 
 .apple-loader-sub {
-  font-size: 14px;
-  color: var(--color-text-muted);
-  animation: fadeIn 0.4s ease;
-  min-height: 20px;
+  font-size: 13.5px;
+  color: #a1a1aa;
+  margin: 0;
 }
 
-/* Minimal 2px Apple Progress Track */
 .apple-progress-track {
   width: 220px;
   height: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   overflow: hidden;
+  position: relative;
 }
 
 .apple-progress-indicator {
-  height: 100%;
-  width: 45%;
-  background: linear-gradient(90deg, transparent, var(--color-primary), var(--color-primary-on-dark), transparent);
-  background-size: 200% 100%;
-  animation: apple-shimmer 1.8s ease infinite;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 40%;
+  background: #ffffff;
   border-radius: 2px;
+  animation: progressPulse 1.8s ease-in-out infinite;
 }
 
-@keyframes apple-shimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(250%); }
+@keyframes progressPulse {
+  0% { left: 0; width: 0%; }
+  50% { left: 25%; width: 50%; }
+  100% { left: 100%; width: 0%; }
 }
 
-/* Meta Pill & Code Stream Button */
 .apple-loader-meta {
   display: flex;
   align-items: center;
   gap: 12px;
-  animation: fadeIn 0.3s ease;
 }
 
 .apple-pill-stat {
-  font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--color-text-secondary);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-border);
-  padding: 4px 12px;
-  border-radius: var(--radius-pill);
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .apple-stream-btn {
-  border-radius: var(--radius-pill);
+  font-size: 12px;
+  color: #ffffff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
 }
 
-/* Apple Minimal Pipeline */
-.apple-pipeline {
+.apple-pipeline-steps {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 16px;
+  margin-top: 8px;
 }
 
-.apple-step {
+.apple-step-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  color: var(--color-text-muted);
-  transition: color var(--transition-normal);
 }
 
-.apple-step:not(:last-child)::after {
-  content: '›';
-  color: var(--color-border);
-  margin-left: 6px;
-  font-size: 13px;
-}
-
-.apple-step-marker {
-  display: inline-flex;
+.apple-step-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  font-size: 9px;
-  font-weight: 700;
-  color: transparent;
-  background: rgba(255, 255, 255, 0.1);
-  transition: all var(--transition-normal);
+  font-size: 10px;
+  color: #71717a;
 }
 
-.apple-step--active {
-  color: var(--color-text-primary);
-}
-.apple-step--active .apple-step-marker {
-  background: var(--color-primary);
-  box-shadow: 0 0 8px rgba(0, 102, 204, 0.4);
+.apple-step-item--done .apple-step-dot {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #000000;
 }
 
-.apple-step--done {
-  color: var(--color-text-secondary);
-}
-.apple-step--done .apple-step-marker {
-  background: rgba(255, 255, 255, 0.2);
+.apple-step-item--active .apple-step-dot {
+  border-color: #ffffff;
   color: #ffffff;
+}
+
+.apple-step-label {
+  font-size: 12px;
+  color: #71717a;
+}
+
+.apple-step-item--done .apple-step-label,
+.apple-step-item--active .apple-step-label {
+  color: #ffffff;
+}
+
+/* ─── Mobile Responsiveness ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .workspace-header {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  
+  .viewport-label {
+    display: none;
+  }
+
+  .fullscreen-btn-text {
+    display: none;
+  }
+
+  .preview-stage {
+    padding: 8px;
+  }
+
+  .device-frame--tablet,
+  .device-frame--phone {
+    max-height: calc(100vh - 120px);
+  }
 }

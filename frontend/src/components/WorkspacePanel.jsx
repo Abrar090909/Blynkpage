@@ -1,20 +1,57 @@
 /**
- * WorkspacePanel — Apple-Designed Code/Preview tab switcher + ActionBar.
- * Complies with DESIGN.md: Action Blue, SF Pro typography, no blinking green dots,
- * real non-looping pipeline progress, and immediate preview when code is available.
+ * WorkspacePanel — Code/Preview tab switcher + Device Modes (Desktop/Tablet/Phone) + Fullscreen Mode.
+ * Fully responsive across mobile devices and desktop.
  */
 import { useState, useEffect } from 'react'
 import CodeStream from './CodeStream'
 import ActionBar from './ActionBar'
 import './WorkspacePanel.css'
 
+// Precision SVG Icons
+const Icons = {
+  Desktop: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  ),
+  Tablet: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
+    </svg>
+  ),
+  Phone: () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
+    </svg>
+  ),
+  Maximize: () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+    </svg>
+  ),
+  Minimize: () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M4 10h6m0 0V4m0 6L3 3m17 7h-6m0 0V4m0 6l7-7" />
+    </svg>
+  ),
+  Close: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
 /**
- * Injects <base target="_blank"> into the preview HTML so all links/forms
+ * Injects <base target="_blank"> into preview HTML so all links/forms
  * open in a new tab instead of navigating the iframe itself.
  */
 function injectBaseTarget(html) {
   if (!html) return html
-  // Strip any accidental markdown fences from the preview
   let clean = html.replace(/^```html\s*/i, '').replace(/```\s*$/i, '')
   if (/<head[^>]*>/i.test(clean)) {
     return clean.replace(/(<head[^>]*>)/i, '$1<base target="_blank">')
@@ -31,15 +68,10 @@ const DEFAULT_STAGES = [
   'Polishing interactive elements…',
 ]
 
-/**
- * Apple-style minimalist activity indicator loader.
- * Linear progression without looping checkboxes.
- */
-function AppleGeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
+function GeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
   const [stageIndex, setStageIndex] = useState(0)
 
   useEffect(() => {
-    // Advance linearly up to the final stage — never loop back to 0!
     const timer = setInterval(() => {
       setStageIndex(i => Math.min(i + 1, DEFAULT_STAGES.length - 1))
     }, 4000)
@@ -47,8 +79,6 @@ function AppleGeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
   }, [])
 
   const currentMsg = statusMessage || DEFAULT_STAGES[stageIndex]
-
-  // Pipeline steps mapped to real progress
   const steps = ['Brief', 'Copy', 'Visuals', 'Code', 'Preview']
   const getStepState = (idx) => {
     if (lineCount > 150) return idx <= 3 ? 'done' : 'active'
@@ -60,12 +90,10 @@ function AppleGeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
 
   return (
     <div className="apple-loader-overlay">
-      {/* Apple-style clean activity spinner */}
       <div className="apple-spinner-wrapper" aria-hidden="true">
         <div className="apple-spinner-ring" />
       </div>
 
-      {/* Headline & status */}
       <div className="apple-loader-header">
         <span className="apple-loader-badge">Generating with Gemini</span>
         <h3 className="apple-loader-title">Building your custom page</h3>
@@ -74,12 +102,10 @@ function AppleGeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
         </p>
       </div>
 
-      {/* Minimalist 2px progress bar in Action Blue */}
       <div className="apple-progress-track">
         <div className="apple-progress-indicator" />
       </div>
 
-      {/* Line count & live stream switcher */}
       {lineCount > 0 && (
         <div className="apple-loader-meta">
           <span className="apple-pill-stat">
@@ -97,18 +123,18 @@ function AppleGeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
         </div>
       )}
 
-      {/* Clean Apple pipeline steps — linear, no looping */}
-      <div className="apple-pipeline">
-        {steps.map((step, i) => {
-          const state = getStepState(i)
+      <div className="apple-pipeline-steps" aria-label="Pipeline progress">
+        {steps.map((step, idx) => {
+          const state = getStepState(idx)
           return (
-            <div
-              key={step}
-              className={`apple-step ${state === 'active' ? 'apple-step--active' : ''} ${state === 'done' ? 'apple-step--done' : ''}`}
-            >
-              <span className="apple-step-marker">
-                {state === 'done' ? '✓' : ''}
-              </span>
+            <div key={step} className={`apple-step-item apple-step-item--${state}`}>
+              <div className="apple-step-dot">
+                {state === 'done' ? (
+                  <span className="apple-step-check">✓</span>
+                ) : (
+                  <span className="apple-step-num">{idx + 1}</span>
+                )}
+              </div>
               <span className="apple-step-label">{step}</span>
             </div>
           )
@@ -130,13 +156,28 @@ export default function WorkspacePanel({
   onPublish,
   onProjectUpdate,
 }) {
+  const [viewportMode, setViewportMode] = useState('desktop') // 'desktop' | 'tablet' | 'phone'
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
   const lineCount = code ? code.split('\n').length : 0
   const hasCode = Boolean(code && code.trim().length > 50)
 
+  // Listen for Escape key to exit fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFullscreen])
+
   return (
-    <div className="workspace-panel">
-      {/* Apple-style Sub-Nav Bar */}
+    <div className={`workspace-panel ${isFullscreen ? 'workspace-panel--fullscreen' : ''}`}>
+      {/* Sub-Nav Bar */}
       <div className="workspace-header">
+        {/* Left: Code / Preview tabs */}
         <div className="workspace-tabs" role="tablist">
           <button
             role="tab"
@@ -160,13 +201,76 @@ export default function WorkspacePanel({
           </button>
         </div>
 
-        <ActionBar
-          project={project}
-          code={code}
-          isStreaming={isStreaming}
-          onPublish={onPublish}
-          onProjectUpdate={onProjectUpdate}
-        />
+        {/* Center: Responsive Device Switcher (Visible in Preview mode) */}
+        {activeTab === 'preview' && (
+          <div className="viewport-switcher" role="group" aria-label="Device viewport modes">
+            <button
+              type="button"
+              className={`viewport-btn ${viewportMode === 'desktop' ? 'viewport-btn--active' : ''}`}
+              onClick={() => setViewportMode('desktop')}
+              title="Desktop View (100%)"
+            >
+              <Icons.Desktop />
+              <span className="viewport-label">Desktop</span>
+            </button>
+            <button
+              type="button"
+              className={`viewport-btn ${viewportMode === 'tablet' ? 'viewport-btn--active' : ''}`}
+              onClick={() => setViewportMode('tablet')}
+              title="Tablet View (768px)"
+            >
+              <Icons.Tablet />
+              <span className="viewport-label">Tablet</span>
+            </button>
+            <button
+              type="button"
+              className={`viewport-btn ${viewportMode === 'phone' ? 'viewport-btn--active' : ''}`}
+              onClick={() => setViewportMode('phone')}
+              title="Phone View (375px)"
+            >
+              <Icons.Phone />
+              <span className="viewport-label">Phone</span>
+            </button>
+          </div>
+        )}
+
+        {/* Right: Actions & Fullscreen Toggle */}
+        <div className="workspace-header-actions">
+          {activeTab === 'preview' && (
+            <button
+              type="button"
+              className={`btn-fullscreen-toggle ${isFullscreen ? 'btn-fullscreen-toggle--active' : ''}`}
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              title={isFullscreen ? 'Exit full screen (Esc)' : 'Full screen mode'}
+            >
+              {isFullscreen ? <Icons.Minimize /> : <Icons.Maximize />}
+              <span className="fullscreen-btn-text">
+                {isFullscreen ? 'Exit' : 'Full screen'}
+              </span>
+            </button>
+          )}
+
+          {!isFullscreen && (
+            <ActionBar
+              project={project}
+              code={code}
+              isStreaming={isStreaming}
+              onPublish={onPublish}
+              onProjectUpdate={onProjectUpdate}
+            />
+          )}
+
+          {isFullscreen && (
+            <button
+              type="button"
+              className="btn-exit-fullscreen"
+              onClick={() => setIsFullscreen(false)}
+              title="Exit full screen (Esc)"
+            >
+              <Icons.Close />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content Area */}
@@ -187,7 +291,7 @@ export default function WorkspacePanel({
             {hasCode ? (
               <CodeStream code={code} isStreaming={isStreaming} />
             ) : (
-              <AppleGeneratingOverlay
+              <GeneratingOverlay
                 statusMessage={statusMessage}
                 lineCount={0}
               />
@@ -197,17 +301,29 @@ export default function WorkspacePanel({
 
         {/* PREVIEW TAB */}
         {activeTab === 'preview' && (
-          <div className="preview-wrapper">
+          <div className={`preview-wrapper preview-wrapper--${viewportMode}`}>
             {hasCode ? (
-              <iframe
-                id="preview-iframe"
-                className="preview-iframe"
-                title="Page preview"
-                srcDoc={injectBaseTarget(code)}
-                sandbox="allow-scripts"
-              />
+              <div className="preview-stage">
+                <div className={`device-frame device-frame--${viewportMode}`}>
+                  {/* Phone Notch & Speaker (When in Phone mode) */}
+                  {viewportMode === 'phone' && (
+                    <div className="phone-notch-island" aria-hidden="true">
+                      <span className="notch-camera" />
+                      <span className="notch-speaker" />
+                    </div>
+                  )}
+
+                  <iframe
+                    id="preview-iframe"
+                    className="preview-iframe"
+                    title={`Page preview (${viewportMode})`}
+                    srcDoc={injectBaseTarget(code)}
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+                </div>
+              </div>
             ) : (
-              <AppleGeneratingOverlay
+              <GeneratingOverlay
                 statusMessage={statusMessage}
                 lineCount={lineCount}
                 onSwitchToCode={() => onTabChange('code')}

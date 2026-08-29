@@ -1,6 +1,6 @@
 /**
- * Dashboard — two-pane layout: Chat (left) + Workspace (right).
- * Loads project on mount, auto-starts SSE stream for new projects.
+ * Dashboard — Two-pane layout on desktop + full mobile responsiveness.
+ * On mobile devices, seamlessly toggles between Workspace (Preview/Code) and AI Chat.
  */
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
@@ -16,8 +16,9 @@ export default function Dashboard() {
   const [loadError, setLoadError] = useState('')
   const { code, isStreaming, isDone, error: sseError, statusMessage, startStream } = useSSE()
   const [activeTab, setActiveTab] = useState(
-    () => localStorage.getItem('pl_workspace_tab') || 'code'
+    () => localStorage.getItem('pl_workspace_tab') || 'preview'
   )
+  const [mobilePane, setMobilePane] = useState('workspace') // 'workspace' | 'chat'
 
   // Fetch project data
   const loadProject = useCallback(async () => {
@@ -35,7 +36,6 @@ export default function Dashboard() {
   useEffect(() => {
     loadProject().then(p => {
       if (p && (p.status === 'generating' || p.status === 'enhancing')) {
-        // Switch to code tab to watch generation in real-time
         setActiveTab('code')
         startStream(projectId)
       }
@@ -46,7 +46,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (isDone) {
       loadProject()
-      // Auto-switch to preview when generation completes
       setActiveTab('preview')
       localStorage.setItem('pl_workspace_tab', 'preview')
     }
@@ -58,7 +57,6 @@ export default function Dashboard() {
   }
 
   const handleRefinement = async (message) => {
-    // POST refinement, then start a fresh stream
     try {
       const res = await fetch(`${API_BASE}/api/projects/${projectId}/chat/`, {
         method: 'POST',
@@ -66,8 +64,11 @@ export default function Dashboard() {
         body: JSON.stringify({ message }),
       })
       if (!res.ok) throw new Error('Failed to send refinement')
-      setActiveTab('code')
-      localStorage.setItem('pl_workspace_tab', 'code')
+      
+      // Auto-switch to workspace on mobile so user sees the live changes
+      setMobilePane('workspace')
+      setActiveTab('preview')
+      localStorage.setItem('pl_workspace_tab', 'preview')
       startStream(projectId)
     } catch (e) {
       console.error(e)
@@ -90,7 +91,7 @@ export default function Dashboard() {
     return (
       <div className="dashboard-error">
         <p>{loadError}</p>
-        <Link to="/" className="btn btn-ghost btn-sm">← Back to home</Link>
+        <Link to="/" className="btn-monolith-primary">← Back to home</Link>
       </div>
     )
   }
@@ -111,25 +112,50 @@ export default function Dashboard() {
     <div className="dashboard-root">
       {/* Top bar */}
       <header className="dashboard-header">
-        <Link to="/" className="dashboard-logo">
-          <span className="logo-mark">PL</span>
-        </Link>
-        <div className="dashboard-breadcrumb">
-          <span className="breadcrumb-prompt" title={project.original_prompt}>
-            {project.original_prompt.length > 60
-              ? project.original_prompt.slice(0, 60) + '…'
-              : project.original_prompt}
-          </span>
+        <div className="dashboard-header-left">
+          <Link to="/" className="dashboard-logo">
+            <span className="logo-mark">BP</span>
+            <span className="logo-title">Blynkpage</span>
+          </Link>
+          <div className="dashboard-breadcrumb">
+            <span className="breadcrumb-prompt" title={project.original_prompt}>
+              {project.original_prompt}
+            </span>
+          </div>
+        </div>
+
+        {/* Mobile View Toggle Switcher (< 768px) */}
+        <div className="dashboard-mobile-nav">
+          <button
+            type="button"
+            className={`mobile-nav-btn ${mobilePane === 'workspace' ? 'mobile-nav-btn--active' : ''}`}
+            onClick={() => setMobilePane('workspace')}
+          >
+            Workspace
+          </button>
+          <button
+            type="button"
+            className={`mobile-nav-btn ${mobilePane === 'chat' ? 'mobile-nav-btn--active' : ''}`}
+            onClick={() => setMobilePane('chat')}
+          >
+            AI Chat
+            {project.messages?.length > 0 && (
+              <span className="mobile-chat-count">{project.messages.length}</span>
+            )}
+          </button>
+        </div>
+
+        <div className="dashboard-header-right">
           <span className={`status-badge status-badge--${project.status}`}>
             {isStreaming ? 'Generating…' : project.status}
           </span>
         </div>
       </header>
 
-      {/* Two-pane layout */}
+      {/* Two-pane layout on desktop, responsive tab-pane on mobile */}
       <div className="dashboard-body">
-        {/* Left — Chat */}
-        <aside className="dashboard-chat-pane">
+        {/* Left — Chat Panel */}
+        <aside className={`dashboard-chat-pane ${mobilePane === 'chat' ? 'dashboard-pane--mobile-active' : ''}`}>
           <ChatPanel
             messages={project.messages}
             isStreaming={isStreaming}
@@ -138,8 +164,8 @@ export default function Dashboard() {
           />
         </aside>
 
-        {/* Right — Workspace */}
-        <main className="dashboard-workspace-pane">
+        {/* Right — Workspace Panel (Code / Preview / Devices) */}
+        <main className={`dashboard-workspace-pane ${mobilePane === 'workspace' ? 'dashboard-pane--mobile-active' : ''}`}>
           <WorkspacePanel
             code={displayCode}
             isStreaming={isStreaming}

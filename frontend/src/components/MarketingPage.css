@@ -796,7 +796,7 @@
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 868px) {
   .monolith-headline {
-    font-size: 38px;
+    font-size: clamp(32px, 7vw, 44px);
   }
   .features-grid {
     grid-template-columns: 1fr;
@@ -809,5 +809,67 @@
   }
   .monolith-menu {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .monolith-hero {
+    padding: 36px 16px 36px;
+  }
+
+  .monolith-badge {
+    font-size: 11.5px;
+    padding: 4px 10px;
+    margin-bottom: 18px;
+  }
+
+  .monolith-headline {
+    font-size: clamp(26px, 8vw, 36px);
+    margin-bottom: 14px;
+  }
+
+  .monolith-subheadline {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .monolith-hero-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .monolith-hero-actions button {
+    width: 100%;
+  }
+
+  .monolith-prompt-card {
+    padding: 12px 14px;
+    margin-bottom: 36px;
+  }
+
+  .prompt-footer-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .prompt-shortcut-hint {
+    text-align: center;
+  }
+
+  .btn-generate {
+    width: 100%;
+  }
+
+  .trust-logos {
+    gap: 18px;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
   }
 }
