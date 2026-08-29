@@ -51,7 +51,7 @@ export default function CodeStream({ code, isStreaming }) {
         <span className="code-stream-label">HTML</span>
         {isStreaming && (
           <span className="code-stream-status">
-            <span className="tab-streaming-dot" style={{ display: 'inline-block' }} />
+            <span className="apple-tab-spinner" style={{ display: 'inline-block' }} />
             Streaming…
           </span>
         )}

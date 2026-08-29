@@ -1,6 +1,6 @@
 /**
- * WorkspacePanel — Code/Preview tab switcher + ActionBar.
- * Right pane of the dashboard.
+ * WorkspacePanel — Apple-Designed Code/Preview tab switcher + ActionBar.
+ * Complies with DESIGN.md: Action Blue, SF Pro typography, no blinking green dots.
  */
 import { useState, useEffect } from 'react'
 import CodeStream from './CodeStream'
@@ -29,7 +29,12 @@ const DEFAULT_STAGES = [
   'Finalising conversion triggers…',
 ]
 
-function GeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
+/**
+ * Apple-style minimalist activity indicator loader.
+ * Completely eliminates neon green dots and erratic blinking in favor of
+ * a calm, refined Cupertino activity spinner and typography.
+ */
+function AppleGeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
   const [stageIndex, setStageIndex] = useState(0)
 
   useEffect(() => {
@@ -42,63 +47,62 @@ function GeneratingOverlay({ statusMessage, lineCount, onSwitchToCode }) {
   const currentMsg = statusMessage || DEFAULT_STAGES[stageIndex]
 
   return (
-    <div className="generating-overlay">
-      <div className="gen-grid" aria-hidden="true" />
+    <div className="apple-loader-overlay">
+      {/* Background subtle atmospheric canvas */}
+      <div className="apple-loader-canvas" aria-hidden="true" />
 
-      {/* Central animated pulse indicator */}
-      <div className="gen-pulse-rings" aria-hidden="true">
-        <span className="ring ring-1" />
-        <span className="ring ring-2" />
-        <span className="ring ring-3" />
-        <span className="gen-core" />
+      {/* Apple-style clean activity spinner */}
+      <div className="apple-spinner-wrapper" aria-hidden="true">
+        <div className="apple-spinner-ring" />
       </div>
 
-      {/* Main status headline */}
-      <div className="gen-status">
-        <div className="gen-badge">
-          <span className="tab-streaming-dot" />
-          <span>AI Engine Active</span>
-        </div>
-        <h3 className="gen-label">Building your custom page</h3>
-        <p className="gen-message" key={currentMsg}>
+      {/* Headline & status */}
+      <div className="apple-loader-header">
+        <span className="apple-loader-badge">Generating with Gemini</span>
+        <h3 className="apple-loader-title">Building your custom page</h3>
+        <p className="apple-loader-sub" key={currentMsg}>
           {currentMsg}
         </p>
       </div>
 
-      {/* Progress track */}
-      <div className="gen-progress-track">
-        <div className="gen-progress-bar" />
+      {/* Minimalist 2px progress bar in Action Blue */}
+      <div className="apple-progress-track">
+        <div className="apple-progress-indicator" />
       </div>
 
-      {/* Token / line stream indicator if tokens started */}
+      {/* Line count & live stream switcher */}
       {lineCount > 0 && (
-        <div className="gen-stats">
-          <span className="gen-stat-pill">
-            ⚡ {lineCount} lines generated so far
+        <div className="apple-loader-meta">
+          <span className="apple-pill-stat">
+            {lineCount} lines generated
           </span>
           {onSwitchToCode && (
             <button
               type="button"
-              className="btn btn-ghost btn-sm gen-code-btn"
+              className="btn btn-ghost btn-sm apple-stream-btn"
               onClick={onSwitchToCode}
             >
-              Watch live code stream →
+              Watch code stream →
             </button>
           )}
         </div>
       )}
 
-      {/* Step pipeline */}
-      <div className="gen-steps">
-        {['1. Brief', '2. Copy', '3. Visuals', '4. Code', '5. Preview'].map((step, i) => {
-          const isActive = lineCount > 0 ? i <= 3 : i <= Math.min(stageIndex, 2)
+      {/* Clean Apple pipeline steps */}
+      <div className="apple-pipeline">
+        {['Brief', 'Copy', 'Visuals', 'Code', 'Preview'].map((step, i) => {
+          const isDone = lineCount > 0 ? i <= 3 : i < stageIndex
+          const isCurrent = lineCount > 0 ? i === 3 : i === stageIndex
+
           return (
             <div
               key={step}
-              className={`gen-step ${isActive ? 'gen-step--active' : ''}`}
+              className={`apple-step ${isCurrent ? 'apple-step--active' : ''} ${isDone ? 'apple-step--done' : ''}`}
             >
-              <div className="gen-step-dot" />
-              <span>{step}</span>
+              <span className="apple-step-marker">
+                {isDone ? '✓' : ''}
+              </span>
+              <span className="apple-step-label">{step}</span>
             </div>
           )
         })}
@@ -128,7 +132,7 @@ export default function WorkspacePanel({
 
   return (
     <div className="workspace-panel">
-      {/* Header bar: Tabs on left, Actions on right */}
+      {/* Apple-style Sub-Nav Bar */}
       <div className="workspace-header">
         <div className="workspace-tabs" role="tablist">
           <button
@@ -139,7 +143,7 @@ export default function WorkspacePanel({
             onClick={() => onTabChange('code')}
           >
             Code
-            {isStreaming && <span className="tab-streaming-dot" />}
+            {isStreaming && <span className="apple-tab-spinner" />}
           </button>
           <button
             role="tab"
@@ -149,7 +153,7 @@ export default function WorkspacePanel({
             onClick={() => onTabChange('preview')}
           >
             Preview
-            {isStreaming && <span className="preview-live-badge">Building…</span>}
+            {isStreaming && <span className="preview-status-pill">Generating…</span>}
           </button>
         </div>
 
@@ -162,7 +166,7 @@ export default function WorkspacePanel({
         />
       </div>
 
-      {/* Main content body */}
+      {/* Content Area */}
       <div
         className="workspace-content"
         role="tabpanel"
@@ -170,7 +174,7 @@ export default function WorkspacePanel({
       >
         {sseError && (
           <div className="workspace-error">
-            <span>⚠ {sseError}</span>
+            <span>{sseError}</span>
           </div>
         )}
 
@@ -178,7 +182,7 @@ export default function WorkspacePanel({
         {activeTab === 'code' && (
           <>
             {isGenerating && !code ? (
-              <GeneratingOverlay
+              <AppleGeneratingOverlay
                 statusMessage={statusMessage}
                 lineCount={0}
               />
@@ -192,14 +196,12 @@ export default function WorkspacePanel({
         {activeTab === 'preview' && (
           <div className="preview-wrapper">
             {isGenerating ? (
-              // While generating, show high-tech animated overlay instead of half-rendered HTML
-              <GeneratingOverlay
+              <AppleGeneratingOverlay
                 statusMessage={statusMessage}
                 lineCount={lineCount}
                 onSwitchToCode={() => onTabChange('code')}
               />
             ) : code ? (
-              // When done, show full preview iframe
               <iframe
                 id="preview-iframe"
                 className="preview-iframe"
@@ -208,10 +210,8 @@ export default function WorkspacePanel({
                 sandbox="allow-scripts"
               />
             ) : (
-              // Empty fallback
               <div className="preview-empty">
-                <div className="preview-empty-icon">⟡</div>
-                <p>Generate your page to see the preview here.</p>
+                <p>Enter a prompt to generate and preview your page.</p>
               </div>
             )}
           </div>

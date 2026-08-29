@@ -58,19 +58,17 @@ export default function MarketingPage() {
       {isLoading && (
         <div className="launch-overlay" role="dialog" aria-modal="true" aria-label="Building your page">
           <div className="launch-modal">
-            <div className="launch-rings">
-              <span className="launch-ring ring-1" />
-              <span className="launch-ring ring-2" />
-              <div className="launch-core">PL</div>
+            <div className="apple-spinner-wrapper">
+              <div className="apple-spinner-ring" />
             </div>
             <div className="launch-content">
               <h3>Initializing PromptLaunch AI</h3>
               <p className="launch-sub">Analyzing brief & architecting high-converting layout…</p>
-              <div className="launch-progress-bar">
-                <div className="launch-progress-fill" />
+              <div className="apple-progress-track" style={{ width: '100%', marginTop: '12px' }}>
+                <div className="apple-progress-indicator" />
               </div>
               <div className="launch-tips">
-                <span>⚡ Real-time token streaming starts in seconds</span>
+                <span>Real-time token streaming starts in seconds</span>
               </div>
             </div>
           </div>

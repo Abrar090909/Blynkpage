@@ -1,67 +1,80 @@
-/* ─── Workspace Panel ────────────────────────────────────────────────────── */
+/* ─── Apple Workspace Panel (DESIGN.md) ────────────────────────────────── */
 
 .workspace-panel {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  background: var(--color-bg);
 }
 
-/* ─── Header ─────────────────────────────────────────────────────────────── */
+/* ─── Header / Sub-Nav Bar ────────────────────────────────────────────────── */
 .workspace-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--space-4);
+  padding: 0 20px;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-elevated);
   flex-shrink: 0;
-  height: 44px;
-  gap: var(--space-4);
+  height: 48px;
+  gap: 16px;
 }
 
-/* ─── Tabs ───────────────────────────────────────────────────────────────── */
+/* ─── Segmented Tabs ─────────────────────────────────────────────────────── */
 .workspace-tabs {
   display: flex;
-  gap: 0;
+  gap: 8px;
+  align-items: center;
   height: 100%;
 }
 
 .workspace-tab {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--color-text-muted);
   font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
-  padding: 0 var(--space-4);
+  font-size: 14px;
+  font-weight: 400;
+  padding: 0 12px;
   cursor: pointer;
   transition: color var(--transition-fast), border-color var(--transition-fast);
   height: 100%;
 }
 
 .workspace-tab:hover {
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 .workspace-tab--active {
   color: var(--color-text-primary);
-  border-bottom-color: var(--color-accent);
+  border-bottom-color: var(--color-primary); /* Action Blue #0066cc */
 }
 
-.tab-streaming-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--color-accent);
+/* Small rotating spinner inside the tab during stream (replaces green dot) */
+.apple-tab-spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--color-primary-on-dark);
   border-radius: 50%;
-  animation: pulse-dot 1s ease infinite;
+  animation: apple-spin 0.8s linear infinite;
 }
 
-/* ─── Content ────────────────────────────────────────────────────────────── */
+.preview-status-pill {
+  font-size: 11px;
+  color: var(--color-primary-on-dark);
+  background: var(--color-primary-dim);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0;
+}
+
+/* ─── Content Area ───────────────────────────────────────────────────────── */
 .workspace-content {
   flex: 1;
   overflow: hidden;
@@ -70,18 +83,18 @@
 }
 
 .workspace-error {
-  background: rgba(248,113,113,0.08);
-  border-bottom: 1px solid rgba(248,113,113,0.2);
-  padding: var(--space-3) var(--space-5);
+  background: rgba(255, 69, 58, 0.1);
+  border-bottom: 1px solid rgba(255, 69, 58, 0.25);
+  padding: 10px 20px;
   font-size: 13px;
   color: var(--color-error);
 }
 
-/* ─── Preview ────────────────────────────────────────────────────────────── */
+/* ─── Preview Iframe ─────────────────────────────────────────────────────── */
 .preview-wrapper {
   width: 100%;
   height: 100%;
-  background: #fff;
+  background: #ffffff;
   position: relative;
 }
 
@@ -98,222 +111,175 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: var(--space-3);
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 15px;
   background: var(--color-bg);
 }
 
-.preview-empty-icon {
-  font-size: 32px;
-  opacity: 0.3;
-}
-
-/* ─── Generating Overlay ─────────────────────────────────────────────────── */
-.generating-overlay {
+/* ─── Apple Activity Loader (NO GREEN DOTS) ──────────────────────────────── */
+.apple-loader-overlay {
   position: absolute;
   inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 28px;
+  gap: 22px;
   background: var(--color-bg);
   z-index: 10;
   overflow: hidden;
-  animation: fadeIn 0.4s ease;
+  animation: fadeIn 0.3s ease;
 }
 
-/* Animated grid background */
-.gen-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,201,167,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,201,167,0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
-  animation: slideUp 1s ease;
-}
-
-/* Pulse rings */
-.gen-pulse-rings {
+/* Apple Cupertino 36px Precision Spinner */
+.apple-spinner-wrapper {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
-.ring {
-  position: absolute;
+.apple-spinner-ring {
+  width: 36px;
+  height: 36px;
+  border: 2.5px solid rgba(255, 255, 255, 0.12);
+  border-top-color: var(--color-primary-on-dark); /* Apple Action Blue #2997ff */
   border-radius: 50%;
-  border: 1px solid var(--color-accent);
-  animation: ripple 2.4s ease-out infinite;
-}
-.ring-1 { width: 80px;  height: 80px;  animation-delay: 0s;    opacity: 0.5; }
-.ring-2 { width: 110px; height: 110px; animation-delay: 0.8s;  opacity: 0.3; }
-.ring-3 { width: 140px; height: 140px; animation-delay: 1.6s;  opacity: 0.15; }
-
-@keyframes ripple {
-  0%   { transform: scale(0.6); opacity: 0.6; }
-  100% { transform: scale(1.3); opacity: 0; }
+  animation: apple-spin 0.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-.gen-core {
-  width: 28px;
-  height: 28px;
-  background: var(--color-accent);
-  border-radius: 50%;
-  box-shadow: 0 0 20px rgba(0,201,167,0.6), 0 0 40px rgba(0,201,167,0.3);
-  animation: pulse-dot 1.5s ease infinite;
-  z-index: 1;
-}
-
-/* Status text */
-.gen-status {
+/* Header & Status Typography */
+.apple-loader-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   text-align: center;
-  z-index: 1;
 }
 
-.gen-label {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  letter-spacing: -0.02em;
-}
-
-.gen-message {
-  font-size: 13px;
-  color: var(--color-accent);
-  font-weight: 500;
-  min-height: 20px;
-  animation: fadeIn 0.5s ease;
-}
-
-/* Progress bar */
-.gen-progress-track {
-  width: 280px;
-  height: 2px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 2px;
-  overflow: hidden;
-  z-index: 1;
-}
-
-.gen-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 1.8s ease infinite;
-  border-radius: 2px;
-  width: 60%;
-}
-
-/* Step indicators */
-.gen-steps {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 1;
-}
-
-.gen-step {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--color-text-muted);
-  transition: color var(--transition-normal);
-  position: relative;
-}
-
-.gen-step:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: calc(100% + 4px);
-  top: 5px;
-  width: 8px;
-  height: 1px;
-  background: var(--color-border);
-}
-
-.gen-step--active {
-  color: var(--color-accent);
-}
-
-.gen-step-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  background: transparent;
-  transition: all var(--transition-normal);
-}
-
-.gen-step--active .gen-step-dot {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  box-shadow: 0 0 8px rgba(0,201,167,0.5);
-}
-
-.gen-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--color-accent-dim);
-  color: var(--color-accent);
-  border: 1px solid rgba(0,201,167,0.25);
-  padding: 3px 10px;
-  border-radius: 100px;
+.apple-loader-badge {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--color-primary-on-dark);
+  background: var(--color-primary-dim);
+  border: 1px solid rgba(41, 151, 255, 0.25);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
 }
 
-.gen-stats {
+.apple-loader-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--color-text-primary);
+}
+
+.apple-loader-sub {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  animation: fadeIn 0.4s ease;
+  min-height: 20px;
+}
+
+/* Minimal 2px Apple Progress Track */
+.apple-progress-track {
+  width: 220px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.apple-progress-indicator {
+  height: 100%;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, var(--color-primary), var(--color-primary-on-dark), transparent);
+  background-size: 200% 100%;
+  animation: apple-shimmer 1.8s ease infinite;
+  border-radius: 2px;
+}
+
+@keyframes apple-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+
+/* Meta Pill & Code Stream Button */
+.apple-loader-meta {
   display: flex;
   align-items: center;
   gap: 12px;
-  z-index: 1;
-  animation: fadeIn 0.4s ease;
+  animation: fadeIn 0.3s ease;
 }
 
-.gen-stat-pill {
+.apple-pill-stat {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--color-accent);
-  background: rgba(0,201,167,0.08);
-  border: 1px solid rgba(0,201,167,0.2);
-  padding: 4px 10px;
-  border-radius: 6px;
-}
-
-.gen-code-btn {
-  font-size: 12px;
   color: var(--color-text-secondary);
-  border-color: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
 }
-.gen-code-btn:hover {
+
+.apple-stream-btn {
+  border-radius: var(--radius-pill);
+}
+
+/* Apple Minimal Pipeline */
+.apple-pipeline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.apple-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  transition: color var(--transition-normal);
+}
+
+.apple-step:not(:last-child)::after {
+  content: '›';
+  color: var(--color-border);
+  margin-left: 6px;
+  font-size: 13px;
+}
+
+.apple-step-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  color: transparent;
+  background: rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-normal);
+}
+
+.apple-step--active {
   color: var(--color-text-primary);
-  border-color: var(--color-accent);
+}
+.apple-step--active .apple-step-marker {
+  background: var(--color-primary);
+  box-shadow: 0 0 8px rgba(0, 102, 204, 0.4);
 }
 
-.preview-live-badge {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 1px 6px;
-  background: var(--color-accent-dim);
-  color: var(--color-accent);
-  border-radius: 4px;
+.apple-step--done {
+  color: var(--color-text-secondary);
 }
-
+.apple-step--done .apple-step-marker {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}

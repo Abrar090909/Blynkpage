@@ -1,4 +1,4 @@
-/* ─── Dashboard Layout ──────────────────────────────────────────────────── */
+/* ─── Apple Dashboard Layout (DESIGN.md) ────────────────────────────────── */
 
 .dashboard-root {
   display: flex;
@@ -8,55 +8,58 @@
   background: var(--color-bg);
 }
 
-/* ─── Header ─────────────────────────────────────────────────────────────── */
+/* ─── Apple Global Header (44px, Pure Void #000000) ──────────────────────── */
 .dashboard-header {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-3) var(--space-5);
+  gap: 16px;
+  padding: 0 20px;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg-elevated);
+  background: var(--color-surface-black);
   flex-shrink: 0;
-  height: 52px;
+  height: 44px;
 }
 
 .dashboard-logo {
   text-decoration: none;
+  display: flex;
+  align-items: center;
 }
 
 .dashboard-breadcrumb {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 12px;
   min-width: 0;
 }
 
 .breadcrumb-prompt {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 400px;
+  max-width: 440px;
+  letter-spacing: -0.01em;
 }
 
 .status-badge {
   flex-shrink: 0;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 100px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
 }
 
 .status-badge--draft        { background: rgba(255,255,255,0.06); color: var(--color-text-muted); }
-.status-badge--enhancing    { background: rgba(245,158,11,0.12);  color: #F59E0B; }
-.status-badge--generating   { background: var(--color-accent-dim); color: var(--color-accent); }
-.status-badge--ready        { background: rgba(0,201,167,0.08);   color: var(--color-accent); }
-.status-badge--published    { background: rgba(0,201,167,0.15);   color: var(--color-accent); }
+.status-badge--enhancing    { background: rgba(245,158,11,0.14);  color: #f59e0b; }
+.status-badge--generating   { background: var(--color-primary-dim); color: var(--color-primary-on-dark); }
+.status-badge--ready        { background: rgba(255,255,255,0.08);   color: var(--color-text-primary); }
+.status-badge--published    { background: rgba(0,102,204,0.2);     color: var(--color-primary-on-dark); }
 
-/* ─── Two-pane body ─────────────────────────────────────────────────────── */
+/* ─── Two-Pane Body ─────────────────────────────────────────────────────── */
 .dashboard-body {
   display: flex;
   flex: 1;
@@ -64,7 +67,7 @@
 }
 
 .dashboard-chat-pane {
-  width: 300px;
+  width: 320px;
   flex-shrink: 0;
   border-right: 1px solid var(--color-border);
   display: flex;
@@ -81,7 +84,7 @@
   min-width: 0;
 }
 
-/* ─── Loading / Error states ─────────────────────────────────────────────── */
+/* ─── Loading / Error States ─────────────────────────────────────────────── */
 .dashboard-loading,
 .dashboard-error {
   display: flex;
@@ -89,17 +92,17 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  gap: var(--space-4);
+  gap: 16px;
   color: var(--color-text-secondary);
 }
 
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 2px solid var(--color-border);
-  border-top-color: var(--color-accent);
+  border: 2.5px solid rgba(255, 255, 255, 0.12);
+  border-top-color: var(--color-primary-on-dark);
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: apple-spin 0.75s linear infinite;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
@@ -110,7 +113,7 @@
 
   .dashboard-chat-pane {
     width: 100%;
-    height: 200px;
+    height: 240px;
     border-right: none;
     border-bottom: 1px solid var(--color-border);
   }

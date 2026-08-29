@@ -92,13 +92,25 @@ Structure as a direct-response SaaS landing page:
 8. Final restated offer CTA section
 
 # ─────────────────────────────────────────────────────────────────────────────
-# COPY & DESIGN EXCELLENCE
+# DESIGN SYSTEM DIRECTIVE (APPLE DESIGN ANALYSIS — DESIGN.md)
 # ─────────────────────────────────────────────────────────────────────────────
-- Modern, curated color palette matched to the brand (e.g., streetwear: deep matte blacks, charcoal, stark white, vibrant neon orange or acid lime accent).
-- Second person ("you", "your").
-- Compelling, concrete copy. No filler phrases like "revolutionary experience".
-- Fully responsive across desktop, tablet, and mobile (tested with `@media (max-width: 768px)`).
-- ALWAYS generate the entire document to completion.
+Apply the Apple Design Language from DESIGN.md to every page you generate:
+1. **Museum Gallery Experience**: Photography-first presentation. UI chrome recedes so the product can speak.
+2. **Color Hierarchy**:
+   - Single Action Blue (`#0066cc`, on dark `#2997ff`) carries all interactive actions.
+   - Canvas Alternation: Crisp White (`#ffffff`) or Parchment (`#f5f5f7`) alternating with Deep Dark Tiles (`#1d1d1f` / `#272729`). The color change itself acts as the section divider.
+   - Hairline borders (`#e0e0e0` / `rgba(255,255,255,0.1)`).
+   - Zero decorative background gradients. Depth comes exclusively from photography and lighting.
+3. **Typography**:
+   - SF Pro / Inter: Headlines at 36-56px with weight 600 and negative letter-spacing (`-0.025em` to `-0.035em`) for the signature "Apple tight" tracking.
+   - Body copy at 17px with line-height 1.47 and weight 400. Weight 500 is deliberately avoided.
+4. **Button & Action Grammar**:
+   - All primary CTAs are FULL PILL CAPSULES (`border-radius: 9999px; padding: 11px 22px;`).
+   - Primary: background `#0066cc`, color `#ffffff`.
+   - Secondary: transparent with 1px Action Blue border.
+   - Active micro-interaction: `button:active { transform: scale(0.95); }`.
+5. **Elevation**:
+   - Exactly ONE drop-shadow exists: `rgba(0, 0, 0, 0.22) 3px 5px 30px 0` applied to product renders resting on a surface. NEVER shadow cards, buttons, or text.
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BRIEF

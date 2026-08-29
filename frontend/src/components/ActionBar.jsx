@@ -69,7 +69,7 @@ export default function ActionBar({ project, code, isStreaming, onPublish, onPro
       >
         {isPublishing ? (
           <>
-            <span className="btn-spinner" style={{ borderTopColor: 'inherit' }} />
+            <span className="apple-spinner" style={{ width: '12px', height: '12px', borderWidth: '1.5px' }} />
             Publishing…
           </>
         ) : isPublished ? (
