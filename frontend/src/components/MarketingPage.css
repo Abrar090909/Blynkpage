@@ -279,65 +279,6 @@
   color: var(--color-text-secondary);
 }
 
-/* ─── Apple Launch Overlay Modal ─────────────────────────────────────────── */
-.launch-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  animation: fadeIn 0.25s ease;
-}
-
-.launch-modal {
-  background: #1d1d1f;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: var(--radius-lg);
-  padding: 36px 32px;
-  max-width: 420px;
-  width: 100%;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
-  animation: slideUp 0.3s ease;
-}
-
-.launch-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.launch-content h3 {
-  font-size: 21px;
-  font-weight: 600;
-  color: #ffffff;
-  letter-spacing: -0.02em;
-}
-
-.launch-sub {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  line-height: 1.4;
-  max-width: 320px;
-}
-
-.launch-tips {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--color-primary-on-dark);
-}
-
 /* ─── Footer (64px padding, Parchment tone) ──────────────────────────────── */
 .marketing-footer {
   background: var(--color-surface-black);

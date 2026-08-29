@@ -80,11 +80,13 @@ class ProjectListCreateView(View):
         if not raw_prompt:
             return JsonResponse({'error': 'prompt is required'}, status=400)
 
+        # Create project instantly with status GENERATING
         project = Project.objects.create(
             original_prompt=raw_prompt,
+            enhanced_brief=raw_prompt,
             name=raw_prompt[:80],
             slug=str(uuid.uuid4())[:8],
-            status=Project.Status.ENHANCING,
+            status=Project.Status.GENERATING,
         )
 
         # Record user's opening message in chat history
@@ -94,18 +96,7 @@ class ProjectListCreateView(View):
             content=raw_prompt,
         )
 
-        # Enhancement step — fast non-streamed call
-        try:
-            enhanced = enhance_prompt(raw_prompt)
-            project.enhanced_brief = enhanced
-            project.status = Project.Status.GENERATING
-            project.save(update_fields=['enhanced_brief', 'status', 'updated_at'])
-        except Exception as e:
-            logger.exception("Enhancement failed: %s", e)
-            project.enhanced_brief = raw_prompt  # Fall back to raw prompt
-            project.status = Project.Status.GENERATING
-            project.save(update_fields=['enhanced_brief', 'status', 'updated_at'])
-
+        # Return immediately — user is redirected to workspace instantly
         return JsonResponse(_project_to_dict(project), status=201)
 
 
@@ -143,15 +134,24 @@ class ProjectStreamView(View):
         generation = Generation.objects.create(
             project=project,
             prompt_used=project.enhanced_brief,
-            model_used=settings.GEMINI_MODEL,
+            model_used=getattr(settings, 'GEMINI_MODEL', 'gemini-3.7-flash'),
             is_current=True,
         )
 
         def event_stream():
             html_chunks = []
             try:
-                # Send immediate connection signal
-                yield "data: [STATUS] Building your custom page with Gemini 3.6 Flash...\n\n"
+                # If enhanced_brief hasn't been generated yet, enhance now inside the stream
+                if project.enhanced_brief == project.original_prompt:
+                    yield "data: [STATUS] Analyzing brief and brand voice…\n\n"
+                    try:
+                        enhanced = enhance_prompt(project.original_prompt)
+                        project.enhanced_brief = enhanced
+                        project.save(update_fields=['enhanced_brief'])
+                    except Exception as enh_err:
+                        logger.warning("Brief enhancement fallback: %s", enh_err)
+
+                yield "data: [STATUS] Generating page with Gemini Flash…\n\n"
 
                 for chunk in stream_generation(project.enhanced_brief):
                     html_chunks.append(chunk)

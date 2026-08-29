@@ -54,34 +54,6 @@ export default function MarketingPage() {
 
   return (
     <div className="marketing-root">
-      {/* Launching Loading Modal */}
-      {isLoading && (
-        <div className="launch-overlay" role="dialog" aria-modal="true" aria-label="Building your page">
-          <div className="launch-modal">
-            <div className="apple-spinner-wrapper">
-              <div className="apple-spinner-ring" />
-            </div>
-            <div className="launch-content">
-              <h3>Initializing PromptLaunch AI</h3>
-              <p className="launch-sub">Analyzing brief & architecting high-converting layout…</p>
-              <div className="apple-progress-track" style={{ width: '100%', marginTop: '12px' }}>
-                <div className="apple-progress-indicator" />
-              </div>
-              <div className="launch-tips">
-                <span>Real-time token streaming starts in seconds</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Ambient background orbs */}
-      <div className="marketing-bg" aria-hidden="true">
-        <div className="orb orb-1" />
-        <div className="orb orb-2" />
-        <div className="grid-lines" />
-      </div>
-
       {/* Nav */}
       <nav className="marketing-nav">
         <a href="/" className="marketing-logo">
@@ -148,8 +120,8 @@ export default function MarketingPage() {
               >
                 {isLoading ? (
                   <>
-                    <span className="btn-spinner" />
-                    Building your page…
+                    <span className="apple-spinner" style={{ width: '14px', height: '14px' }} />
+                    Entering workspace…
                   </>
                 ) : (
                   <>

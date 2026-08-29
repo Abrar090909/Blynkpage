@@ -94,11 +94,8 @@ Be specific. Add sharp, realistic details that make this brand feel like a real 
 
 
 def _get_model_candidates() -> list[str]:
-    """Return an ordered list of flash models to attempt with failover."""
-    primary = getattr(settings, 'GEMINI_MODEL', 'gemini-3.7-flash')
-    alternates = ['gemini-3.7-flash', 'gemini-3.6-flash']
-    models = [primary] + [m for m in alternates if m != primary]
-    return models
+    """Return an ordered list of active flash models to attempt with failover."""
+    return ['gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.7-flash']
 
 
 def enhance_prompt(raw_prompt: str) -> str:
