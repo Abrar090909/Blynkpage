@@ -8,6 +8,7 @@ import { useSSE } from '../hooks/useSSE'
 import { API_BASE } from '../config'
 import ChatPanel from './ChatPanel'
 import WorkspacePanel from './WorkspacePanel'
+import FuturisticBLogo from './FuturisticBLogo'
 import './Dashboard.css'
 
 export default function Dashboard() {
@@ -114,7 +115,7 @@ export default function Dashboard() {
       <header className="dashboard-header">
         <div className="dashboard-header-left">
           <Link to="/" className="dashboard-logo">
-            <span className="logo-mark">BP</span>
+            <FuturisticBLogo size={22} />
             <span className="logo-title">Blynkpage</span>
           </Link>
           <div className="dashboard-breadcrumb">

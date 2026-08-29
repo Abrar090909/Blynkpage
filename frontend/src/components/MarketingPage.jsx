@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { API_BASE } from '../config'
 import DarkVeil from './DarkVeil'
+import FuturisticBLogo from './FuturisticBLogo'
 import './MarketingPage.css'
 
 const EXAMPLE_PROMPTS = [
@@ -149,9 +150,7 @@ export default function MarketingPage() {
       <header className="monolith-nav-wrapper">
         <nav className="monolith-nav">
           <a href="/" className="monolith-logo">
-            <span className="monolith-logo-icon">
-              <Icons.Logo />
-            </span>
+            <FuturisticBLogo size={24} />
             <span className="monolith-logo-text">Blynkpage</span>
           </a>
 
@@ -309,7 +308,7 @@ export default function MarketingPage() {
             {/* Mockup Sidebar */}
             <div className="mockup-sidebar">
               <div className="mockup-logo">
-                <span className="mockup-logo-mark"><Icons.Logo /></span>
+                <FuturisticBLogo size={20} />
                 <span className="mockup-logo-title">Blynkpage</span>
               </div>
               <div className="mockup-nav-group">
@@ -438,7 +437,10 @@ export default function MarketingPage() {
       <footer className="monolith-footer">
         <div className="footer-inner">
           <div className="footer-brand">
-            <span className="footer-logo">Blynkpage</span>
+            <div className="footer-logo-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FuturisticBLogo size={20} />
+              <span className="footer-logo">Blynkpage</span>
+            </div>
             <p>AI landing pages built for real conversions.</p>
           </div>
           <div className="footer-links">
