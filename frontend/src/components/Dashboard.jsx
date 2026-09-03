@@ -4,15 +4,19 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { useSSE } from '../hooks/useSSE'
 import { API_BASE } from '../config'
 import ChatPanel from './ChatPanel'
 import WorkspacePanel from './WorkspacePanel'
 import FuturisticBLogo from './FuturisticBLogo'
+import PricingModal from './PricingModal'
+import PasswordResetModal from './PasswordResetModal'
 import './Dashboard.css'
 
 export default function Dashboard() {
   const { projectId } = useParams()
+  const { user, token, authFetch, logout } = useAuth()
   const [project, setProject] = useState(null)
   const [loadError, setLoadError] = useState('')
   const { code, isStreaming, isDone, error: sseError, statusMessage, startStream } = useSSE()
@@ -20,11 +24,20 @@ export default function Dashboard() {
     () => localStorage.getItem('pl_workspace_tab') || 'preview'
   )
   const [mobilePane, setMobilePane] = useState('workspace') // 'workspace' | 'chat'
+  const [showPricingModal, setShowPricingModal] = useState(false)
+  const [pricingReason, setPricingReason] = useState(null)
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [resetUid, setResetUid] = useState(null)
+  const [resetToken, setResetToken] = useState(null)
+  const [subInfo, setSubInfo] = useState(null)
 
-  // Fetch project data
+  // Fetch project data with strict user authentication
   const loadProject = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/projects/${projectId}/`)
+      const res = await authFetch(`${API_BASE}/api/projects/${projectId}/`)
+      if (res.status === 401 || res.status === 403) {
+        throw new Error('Access denied: You do not have permission to view or edit this project.')
+      }
       if (!res.ok) throw new Error(`Failed to load project (${res.status})`)
       const data = await res.json()
       setProject(data)
@@ -32,21 +45,49 @@ export default function Dashboard() {
     } catch (e) {
       setLoadError(e.message)
     }
-  }, [projectId])
+  }, [projectId, authFetch])
+
+  const fetchSubscription = useCallback(async () => {
+    try {
+      const res = await authFetch(`${API_BASE}/api/billing/me/`)
+      if (res.ok) {
+        const data = await res.json()
+        setSubInfo(data)
+      }
+    } catch (e) {
+      // Non-critical
+    }
+  }, [authFetch])
 
   useEffect(() => {
+    fetchSubscription()
+    const params = new URLSearchParams(window.location.search)
+    const uid = params.get('reset_uid')
+    const tok = params.get('reset_token')
+    if (uid && tok) {
+      setResetUid(uid)
+      setResetToken(tok)
+      setShowResetModal(true)
+    }
+  }, [fetchSubscription])
+
+  useEffect(() => {
+    if (projectId) {
+      localStorage.setItem('pl_last_project_id', projectId)
+    }
     loadProject().then(p => {
       if (p && (p.status === 'generating' || p.status === 'enhancing')) {
         setActiveTab('code')
-        startStream(projectId)
+        startStream(projectId, token)
       }
     })
-  }, [projectId]) // eslint-disable-line
+  }, [projectId, token]) // eslint-disable-line
 
   // After stream ends, reload project to get updated status + chat history
   useEffect(() => {
     if (isDone) {
       loadProject()
+      fetchSubscription()
       setActiveTab('preview')
       localStorage.setItem('pl_workspace_tab', 'preview')
     }
@@ -59,25 +100,32 @@ export default function Dashboard() {
 
   const handleRefinement = async (message) => {
     try {
-      const res = await fetch(`${API_BASE}/api/projects/${projectId}/chat/`, {
+      const res = await authFetch(`${API_BASE}/api/projects/${projectId}/chat/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
       })
+
+      if (res.status === 402) {
+        setPricingReason('quota_exceeded')
+        setShowPricingModal(true)
+        return
+      }
+
       if (!res.ok) throw new Error('Failed to send refinement')
       
       // Auto-switch to workspace on mobile so user sees the live changes
       setMobilePane('workspace')
       setActiveTab('preview')
       localStorage.setItem('pl_workspace_tab', 'preview')
-      startStream(projectId)
+      startStream(projectId, token)
     } catch (e) {
       console.error(e)
     }
   }
 
   const handlePublish = async () => {
-    const res = await fetch(`${API_BASE}/api/projects/${projectId}/publish/`, {
+    const res = await authFetch(`${API_BASE}/api/projects/${projectId}/publish/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     })
@@ -147,9 +195,37 @@ export default function Dashboard() {
         </div>
 
         <div className="dashboard-header-right">
+          {/* Subscription & Quota Pill */}
+          {subInfo && (
+            <button
+              type="button"
+              className={`plan-header-pill plan-header-pill--${subInfo.plan}`}
+              onClick={() => {
+                setPricingReason(null)
+                setShowPricingModal(true)
+              }}
+              title="Click to view subscription plan or upgrade"
+            >
+              <span className="plan-pill-name">
+                {subInfo.plan === 'pro' ? 'PRO' : subInfo.plan === 'starter' ? 'STARTER' : 'FREE'}
+              </span>
+              {subInfo.limit !== null && (
+                <span className="plan-pill-usage">{subInfo.used}/{subInfo.limit}</span>
+              )}
+            </button>
+          )}
+
           <span className={`status-badge status-badge--${project.status}`}>
             {isStreaming ? 'Generating…' : project.status}
           </span>
+          {user && (
+            <div className="monolith-user-pill" style={{ marginLeft: '8px' }}>
+              <div className="monolith-user-avatar">
+                {(user?.first_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+              </div>
+              <span style={{ fontSize: '12px' }}>{user?.first_name || user?.email?.split('@')[0]}</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -162,6 +238,8 @@ export default function Dashboard() {
             isStreaming={isStreaming}
             onSendRefinement={handleRefinement}
             projectStatus={project.status}
+            projectId={project.id}
+            onVersionRestored={loadProject}
           />
         </aside>
 
@@ -181,6 +259,32 @@ export default function Dashboard() {
           />
         </main>
       </div>
+
+      {/* Pricing / Quota Limit Modal */}
+      {showPricingModal && (
+        <PricingModal
+          reason={pricingReason}
+          onClose={() => {
+            setShowPricingModal(false)
+            setPricingReason(null)
+            fetchSubscription()
+          }}
+        />
+      )}
+
+      {/* Password Reset Modal */}
+      {showResetModal && (
+        <PasswordResetModal
+          initialUid={resetUid}
+          initialToken={resetToken}
+          onClose={() => {
+            setShowResetModal(false)
+            setResetUid(null)
+            setResetToken(null)
+          }}
+        />
+      )}
     </div>
   )
 }
+

@@ -1,40 +1,118 @@
-/* ─── Action Bar ─────────────────────────────────────────────────────────── */
+/* ─── Vercel / Framer Premium Action Bar ──────────────────────────────────── */
 
 .action-bar {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   flex-wrap: nowrap;
+  flex-shrink: 0;
+  max-width: 100%;
 }
 
 .action-btn {
-  white-space: nowrap;
+  height: 30px !important;
+  line-height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif !important;
+  letter-spacing: -0.01em;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer;
+  border: 1px solid transparent;
 }
 
-.action-btn-wrapper {
-  position: relative;
+/* Primary Publish Button — Crisp Solid Contrast (Vercel Style) */
+#action-publish.btn-primary {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-.action-btn--coming-soon {
-  opacity: 0.35;
-  cursor: not-allowed;
+#action-publish.btn-primary:hover:not(:disabled) {
+  background: #e4e4e7 !important;
+  border-color: #e4e4e7 !important;
+  transform: translateY(-1px);
 }
 
-.coming-soon-badge {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: rgba(245,158,11,0.2);
-  color: #F59E0B;
-  border-radius: 100px;
-  padding: 1px 5px;
+#action-publish.btn-secondary {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-.meta-icon {
-  font-family: Georgia, serif;
-  font-weight: 700;
-  font-size: 13px;
+#action-publish.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Secondary Ghost Buttons — Sleek Monochrome Dark */
+.action-btn.btn-ghost {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #a1a1aa !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+}
+
+.action-btn.btn-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.action-btn.btn-ghost:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Meta Pixel button */
+.action-btn--meta {
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.action-btn--meta:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  color: #bfdbfe !important;
+}
+
+.action-btn--pixel-on {
+  background: rgba(59, 130, 246, 0.12) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #60a5fa !important;
+}
+
+/* Warning / Compliance Alert */
+.action-btn--warn {
+  background: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  color: #fbbf24 !important;
+}
+
+/* Responsive compacting so it NEVER bleeds */
+@media (max-width: 1280px) {
+  .action-btn {
+    padding: 0 8px !important;
+    gap: 4px !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .action-btn:not(#action-publish) .action-btn-label {
+    display: none;
+  }
+  .action-btn:not(#action-publish) {
+    width: 30px !important;
+    padding: 0 !important;
+  }
 }
 
 /* Reuse the spinner from global */
@@ -42,6 +120,109 @@
   width: 12px;
   height: 12px;
   border-width: 1.5px;
+}
+
+/* ─── Compliance Review Modal ──────────────────────────────────────────────── */
+
+.compliance-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.compliance-modal {
+  background: linear-gradient(145deg, rgba(24, 18, 10, 0.99), rgba(22, 16, 8, 0.99));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 520px;
+  padding: 1.5rem;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  animation: pixel-modal-in 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.compliance-header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.compliance-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.compliance-header h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.compliance-header p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+}
+
+.compliance-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.compliance-item {
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.compliance-item strong {
+  font-size: 0.8rem;
+  color: #fbbf24;
+}
+
+.compliance-item span {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.5;
+}
+
+.compliance-match {
+  font-size: 0.72rem;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: rgba(255,255,255,0.4);
+  font-family: monospace;
+}
+
+.compliance-footer {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.35);
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.compliance-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 @media (max-width: 640px) {

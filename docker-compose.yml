@@ -1,0 +1,90 @@
+# ==============================================================================
+# Docker Compose for Blynkpages Production / Staging Deployment
+# Includes: PostgreSQL 16, Redis 7, Django Gunicorn Backend, Vite Nginx Frontend
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # ─── PostgreSQL Database ───────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: blynkpages_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-blynkpages}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_secure_pass_change_in_prod}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blynk_internal
+
+  # ─── Redis Cache / Queue ───────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: blynkpages_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blynk_internal
+
+  # ─── Django Backend ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: blynkpages_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY:-enter_a_very_long_secure_secret_key_here}
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres_secure_pass_change_in_prod}@db:5432/${DB_NAME:-blynkpages}
+      - ALLOWED_HOSTS=*
+      - CORS_ALLOW_ALL_ORIGINS=False
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
+    networks:
+      - blynk_internal
+      - blynk_public
+
+  # ─── Frontend Web Server (Nginx + Vite) ────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: blynkpages_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - blynk_public
+      - blynk_internal
+
+networks:
+  blynk_internal:
+    internal: true
+  blynk_public:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

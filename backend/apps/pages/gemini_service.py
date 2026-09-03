@@ -69,27 +69,27 @@ def strip_markdown_fences(html: str) -> str:
 # ─── Enhancement step ─────────────────────────────────────────────────────────
 
 ENHANCEMENT_PROMPT = """
-You are a senior digital conversion strategist and brand creative director.
-A user has typed a product description to generate a high-converting web page.
-Your job is to expand it into an inspiring, concrete, structured creative brief.
+You are a senior direct-response marketing director and high-ROAS paid ads strategist.
+A performance marketer or brand founder has provided an ad hook, creative angle, or product description.
+Your job is to expand it into an elite, structured creative brief for a 1:1 Ad-Congruent Landing Page.
 
-USER PROMPT:
+USER AD HOOK / PRODUCT BRIEF:
 {raw_prompt}
 
 Output a structured brief with these exact sections (plain text, no markdown headers):
 
-PAGE_TYPE: [Either "E-Commerce Product Page" (for apparel, coffee, physical goods, gadgets) or "SaaS/Service Landing Page" (for apps, subscriptions, B2B tools, agencies)]
-PRODUCT_NAME: [Punchy, memorable brand/product name]
-PRODUCT: [What is it, in one compelling, vivid sentence]
-AUDIENCE: [Who is the ideal buyer — demographics, mindset, taste level]
-PRICE_OFFER: [Exact price and offer structure, e.g. "$120 (Limited Drop 004)" or "$39/mo with 14-day trial"]
-CATEGORY: [One of: Streetwear/Fashion / Food & Beverage / Tech Gadgets / SaaS / Wellness / Other]
-TONE: [One of: Underground & Bold / Premium Minimalist / Vibrant & Punchy / High-Trust Professional]
-LIKELY_OBJECTION: [The single biggest hesitation the buyer has, e.g. "Is the fabric actually 450 GSM heavyweight?"]
-PROOF_POINT: [Concrete proof, e.g. "Milled in Portugal from 100% organic combed cotton, 300 pieces worldwide"]
-HOOK_IDEA: [A punchy, unignorable headline angle]
+PAGE_TYPE: [Either "E-Commerce Product Drop / DTC Presell Page" (streetwear, fashion, physical products, consumables) or "SaaS / High-Ticket Lead Gen Presell Page" (software, digital services)]
+BRAND_OR_PRODUCT_NAME: [Exact brand name from prompt, e.g. "funk"]
+EXACT_PRICE_AND_CURRENCY: [Exact price and currency requested e.g. "₹2,999 / 2999/-" — NEVER change or hallucinate a different price]
+EXACT_VISUAL_AESTHETICS: [Specific visual motifs requested, e.g. "cool stickers, hoodie cartoon character mascot, funky Gen Z streetwear, bold typography, acid/neon accents"]
+CORE_AD_HOOK: [The primary creative angle / promise from the ad that MUST be mirrored above the fold]
+CONGRUENCE_HEADLINE: [The exact high-converting H1 matching the ad hook]
+TARGET_AUDIENCE: [The exact high-intent buyer persona clicking from Meta / TikTok / Google Ads]
+PRODUCT_HIGHLIGHTS: [3-4 specific craftsmanship or feature highlights, e.g. 420 GSM Terry Cotton, High-Density Cartoon Mascot Puff Print, Boxy Fit]
+IRRESISTIBLE_OFFER: [Exact pricing, drop specials, or incentives e.g. "₹2,999 Drop Special • Free Shipping Across India • Limited Run"]
+PRIMARY_OBJECTION_CRUSHER: [The biggest skepticism the buyer has and the proof point that crushes it]
 
-Be specific. Add sharp, realistic details that make this brand feel like a real $10M company.
+Be extremely concrete, direct-response focused, and conversion-engineered.
 """.strip()
 
 
@@ -127,29 +127,37 @@ def enhance_prompt(raw_prompt: str) -> str:
 # ─── Generation step (real-time streaming) ───────────────────────────────────
 
 def _build_generation_prompt(
-    enhanced_brief: str,
+    raw_prompt: str,
+    enhanced_brief: str | None = None,
     refinement_instruction: str | None = None,
     current_html: str | None = None,
 ) -> str:
     """
-    Combine the versioned system prompt with the enhanced brief.
+    Combine the versioned system prompt with the raw prompt and enhanced brief.
     If refinement_instruction is provided, append it and the current HTML.
     """
     system_template = _load_system_prompt()
-    prompt = system_template.replace('{enhanced_brief}', enhanced_brief)
+    brief_text = enhanced_brief or raw_prompt
+    prompt = system_template.replace('{raw_prompt}', raw_prompt).replace('{enhanced_brief}', brief_text)
 
-    if refinement_instruction and current_html:
+    if refinement_instruction:
         prompt += (
-            f"\n\n--- REFINEMENT INSTRUCTION ---\n"
-            f"{refinement_instruction}\n\n"
-            f"--- CURRENT HTML (refine this, regenerate the full page) ---\n"
-            f"{current_html}"
+            f"\n\n# ─────────────────────────────────────────────────────────────────────────────\n"
+            f"# USER REFINEMENT DIRECTIVE (CRITICAL - APPLY THESE CHANGES TO THE PAGE)\n"
+            f"# ─────────────────────────────────────────────────────────────────────────────\n"
+            f"{refinement_instruction}\n"
         )
+        if current_html:
+            prompt += (
+                f"\n\n# PREVIOUS HTML CODE TO REFINE (Preserve all working sections, CSS, and functionality; modify specifically according to user instructions):\n"
+                f"{current_html}\n"
+            )
     return prompt
 
 
 def stream_generation(
-    enhanced_brief: str,
+    raw_prompt: str,
+    enhanced_brief: str | None = None,
     refinement_instruction: str | None = None,
     current_html: str | None = None,
 ) -> Generator[str, None, None]:
@@ -158,7 +166,7 @@ def stream_generation(
     Includes automatic model failover if one model hits quota or capacity limits.
     """
     client = _get_client()
-    prompt = _build_generation_prompt(enhanced_brief, refinement_instruction, current_html)
+    prompt = _build_generation_prompt(raw_prompt, enhanced_brief, refinement_instruction, current_html)
     last_error = None
 
     for model_name in _get_model_candidates():

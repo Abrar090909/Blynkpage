@@ -31,7 +31,7 @@ export function useSSE() {
     setIsStreaming(false)
   }, [])
 
-  const startStream = useCallback((projectId) => {
+  const startStream = useCallback((projectId, token) => {
     // Close any existing connection
     stopStream()
 
@@ -43,7 +43,9 @@ export function useSSE() {
     setStatusMessage('Building your custom page…')
     setIsStreaming(true)
 
-    const url = `${API_BASE}/api/projects/${projectId}/stream/`
+    const authToken = token || localStorage.getItem('blynk_access_token')
+    const query = authToken ? `?token=${encodeURIComponent(authToken)}` : ''
+    const url = `${API_BASE}/api/projects/${projectId}/stream/${query}`
     const es = new EventSource(url)
     sourceRef.current = es
 

@@ -1,16 +1,18 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { API_BASE } from '../config'
+import { useAuth } from '../context/AuthContext'
 import DarkVeil from './DarkVeil'
 import FuturisticBLogo from './FuturisticBLogo'
+import AuthModal from './AuthModal'
 import './MarketingPage.css'
 
 const EXAMPLE_PROMPTS = [
-  'A subscription box for cold-brew coffee beans, ships every 2 weeks, $24/mo, for busy professionals.',
-  'Freelance logo design service, 48-hour turnaround, flat rate $299, targeting early-stage startups.',
-  'Online yoga studio for new moms — live classes + on-demand, $39/mo, childcare-friendly scheduling.',
-  'B2B tool for HR teams to automate employee onboarding, starting at $149/seat/mo.',
-  'Heavyweight streetwear hoodie drop, 450 GSM organic cotton, limited to 300 pieces worldwide.',
+  'Meta Ad Angle: Why 90% of collagen powders fail to absorb in your body, and how our liposomal formula fixes it ($48/mo subscription).',
+  'TikTok Video Hook: The 450 GSM organic streetwear hoodie that never shrinks in the wash. Limited Drop 004, $120 flat rate.',
+  'Meta Ad Hook: Stop afternoon brain fog. The nitrogen-brewed cold brew beans that deliver 6-hour clean caffeine without acid crash ($24/bag).',
+  'Google Ad Angle: Emergency 24-hr commercial roof leak repair in Austin, TX with $0 insurance claims diagnostic.',
+  'TikTok Creative: The 0.3mm RFID-blocking titanium wallet that replaced 500,000 bulky leather wallets. $65 with lifetime warranty.',
 ]
 
 // Real SVG Icons (Zero Emojis)
@@ -84,12 +86,34 @@ const Icons = {
 }
 
 export default function MarketingPage() {
+  const { user, isAuthenticated, logout, authFetch } = useAuth()
   const [prompt, setPrompt] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
+  const [isAuthOpen, setIsAuthOpen] = useState(false)
+  const [authTab, setAuthTab] = useState('signin')
+  const [pendingPrompt, setPendingPrompt] = useState('')
+  const [latestProjectId, setLatestProjectId] = useState(
+    () => localStorage.getItem('pl_last_project_id') || null
+  )
+
   const navigate = useNavigate()
   const textareaRef = useRef(null)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      authFetch(`${API_BASE}/api/projects/`)
+        .then(res => res.ok ? res.json() : [])
+        .then(projects => {
+          if (Array.isArray(projects) && projects.length > 0) {
+            setLatestProjectId(projects[0].id)
+            localStorage.setItem('pl_last_project_id', projects[0].id)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [isAuthenticated, authFetch])
 
   const cyclePlaceholder = () => {
     setPlaceholderIndex(i => (i + 1) % EXAMPLE_PROMPTS.length)
@@ -100,22 +124,15 @@ export default function MarketingPage() {
     textareaRef.current?.focus()
   }
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault()
-    const trimmed = prompt.trim()
-    if (!trimmed) {
-      textareaRef.current?.focus()
-      return
-    }
-
+  const executeProjectCreation = async (textToSubmit) => {
     setIsLoading(true)
     setError('')
 
     try {
-      const res = await fetch(`${API_BASE}/api/projects/`, {
+      const res = await authFetch(`${API_BASE}/api/projects/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: trimmed }),
+        body: JSON.stringify({ prompt: textToSubmit }),
       })
 
       if (!res.ok) {
@@ -129,6 +146,25 @@ export default function MarketingPage() {
       setError(err.message || 'Something went wrong. Please try again.')
       setIsLoading(false)
     }
+  }
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault()
+    const trimmed = prompt.trim()
+    if (!trimmed) {
+      textareaRef.current?.focus()
+      return
+    }
+
+    // Zero-friction conversion: if not authenticated, pop auth modal and continue seamlessly
+    if (!isAuthenticated) {
+      setPendingPrompt(trimmed)
+      setAuthTab('signup')
+      setIsAuthOpen(true)
+      return
+    }
+
+    await executeProjectCreation(trimmed)
   }
 
   return (
@@ -162,16 +198,61 @@ export default function MarketingPage() {
           </div>
 
           <div className="monolith-nav-actions">
-            <button
-              type="button"
-              className="btn-monolith-primary btn-monolith-nav"
-              onClick={() => {
-                textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                textareaRef.current?.focus()
-              }}
-            >
-              Get started
-            </button>
+            {isAuthenticated ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-monolith-primary btn-monolith-nav"
+                  onClick={() => {
+                    if (latestProjectId) {
+                      navigate(`/dashboard/${latestProjectId}`)
+                    } else {
+                      textareaRef.current?.focus()
+                    }
+                  }}
+                  title="Directly enter your workspace"
+                >
+                  <span>{latestProjectId ? 'Go to Workspace →' : 'New Project +'}</span>
+                </button>
+                <div className="monolith-user-pill">
+                  <div className="monolith-user-avatar">
+                    {(user?.first_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                  </div>
+                  <span>{user?.first_name || user?.email?.split('@')[0]}</span>
+                  <button
+                    type="button"
+                    className="monolith-btn-signout"
+                    onClick={logout}
+                    title="Sign out of your account"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="btn-monolith-signin"
+                  onClick={() => {
+                    setAuthTab('signin')
+                    setIsAuthOpen(true)
+                  }}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  className="btn-monolith-primary btn-monolith-nav"
+                  onClick={() => {
+                    setAuthTab('signup')
+                    setIsAuthOpen(true)
+                  }}
+                >
+                  Get started
+                </button>
+              </>
+            )}
           </div>
         </nav>
       </header>
@@ -180,49 +261,71 @@ export default function MarketingPage() {
       <main className="monolith-hero">
         {/* Announcement Capsule */}
         <div className="monolith-badge">
-          <span className="badge-text">Gemini 3.5 Engine</span>
+          <span className="badge-text">ROAS Optimizer</span>
           <span className="badge-sep">/</span>
-          <span className="badge-sub">Live generation</span>
+          <span className="badge-sub">1:1 Meta & TikTok Ad Congruence</span>
           <span className="badge-arrow"><Icons.ArrowRight /></span>
         </div>
 
         {/* Headline: STRICTLY 2 LINES ONLY */}
         <h1 className="monolith-headline">
-          Build High-Converting<br />
-          Landing Pages With AI
+          Turn Meta & TikTok Ads<br />
+          Into 1:1 High-ROAS Pages
         </h1>
 
         {/* Short, simple, easy to understand subtitle */}
         <p className="monolith-subheadline">
-          Describe what you sell in one sentence. Get a complete, responsive
-          landing page with high-converting copy in seconds.
+          Stop burning ad spend sending paid clicks to generic homepages. Paste your
+          creative hook — get a congruent presell landing page that doubles your ROAS in 30 seconds.
         </p>
 
         {/* Quick CTA Actions: Clean solid white & dark borders, NO orange */}
         <div className="monolith-hero-actions">
-          <button
-            type="button"
-            className="btn-monolith-ghost"
-            onClick={handleUseExample}
-          >
-            <Icons.Play />
-            <span>Try an example</span>
-          </button>
+          {isAuthenticated && latestProjectId ? (
+            <>
+              <button
+                type="button"
+                className="btn-monolith-primary"
+                onClick={() => navigate(`/dashboard/${latestProjectId}`)}
+              >
+                <span>Resume Workspace</span>
+                <Icons.ArrowRight />
+              </button>
+              <button
+                type="button"
+                className="btn-monolith-ghost"
+                onClick={() => textareaRef.current?.focus()}
+              >
+                <span>+ Build New Page</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="btn-monolith-ghost"
+                onClick={handleUseExample}
+              >
+                <Icons.Play />
+                <span>Try an ad hook</span>
+              </button>
 
-          <button
-            type="button"
-            className="btn-monolith-primary"
-            onClick={() => textareaRef.current?.focus()}
-          >
-            <span>Get started for free</span>
-            <Icons.ArrowRight />
-          </button>
+              <button
+                type="button"
+                className="btn-monolith-primary"
+                onClick={() => textareaRef.current?.focus()}
+              >
+                <span>Generate presell page</span>
+                <Icons.ArrowRight />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Interactive Prompt Box Card */}
         <form className="monolith-prompt-card" onSubmit={handleSubmit} id="prompt-form">
           <div className="prompt-header-bar">
-            <span className="prompt-tag">AI Prompt</span>
+            <span className="prompt-tag">Ad Hook / Creative Angle</span>
             <button
               type="button"
               className="prompt-cycle-btn"
@@ -230,7 +333,7 @@ export default function MarketingPage() {
               disabled={isLoading}
             >
               <Icons.Refresh />
-              <span>Shuffle example</span>
+              <span>Shuffle ad angle</span>
             </button>
           </div>
 
@@ -403,30 +506,30 @@ export default function MarketingPage() {
       <section className="monolith-features" id="features">
         <div className="features-container">
           <div className="section-tag">How it works</div>
-          <h2 className="section-title">Three steps to launch.</h2>
+          <h2 className="section-title">Three steps to 1:1 ad congruence.</h2>
 
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-num">01</div>
-              <h3 className="feature-heading">Describe</h3>
+              <h3 className="feature-heading">Paste Ad Hook</h3>
               <p className="feature-text">
-                Type what you sell in plain English. No complicated builders or templates.
+                Input your winning Meta or TikTok ad angle, video hook, or creative script.
               </p>
             </div>
 
             <div className="feature-card">
               <div className="feature-num">02</div>
-              <h3 className="feature-heading">Generate</h3>
+              <h3 className="feature-heading">1:1 Message Scent</h3>
               <p className="feature-text">
-                AI writes sharp headlines, adds product photography, and writes clean code.
+                AI matches the ad promise above the fold, adds 'Us vs Them' comparison tables, and crushes buyer objections.
               </p>
             </div>
 
             <div className="feature-card">
               <div className="feature-num">03</div>
-              <h3 className="feature-heading">Launch</h3>
+              <h3 className="feature-heading">Dynamic UTM Scale</h3>
               <p className="feature-text">
-                Preview your page live, refine details via chat, and publish with one click.
+                Scale 20+ ad creative variants against 1 page using built-in dynamic URL parameters and mobile sticky buy bars.
               </p>
             </div>
           </div>
@@ -453,6 +556,20 @@ export default function MarketingPage() {
           <p>© 2026 Blynkpage. All rights reserved.</p>
         </div>
       </footer>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        defaultTab={authTab}
+        onClose={() => setIsAuthOpen(false)}
+        onSuccess={() => {
+          if (pendingPrompt) {
+            const nextPrompt = pendingPrompt
+            setPendingPrompt('')
+            executeProjectCreation(nextPrompt)
+          }
+        }}
+      />
     </div>
   )
 }

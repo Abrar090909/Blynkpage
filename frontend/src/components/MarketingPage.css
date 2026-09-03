@@ -145,6 +145,61 @@
   font-size: 13px;
 }
 
+.btn-monolith-signin {
+  background: transparent;
+  color: #ededed;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-monolith-signin:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.monolith-user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  padding: 4px 12px 4px 6px;
+  font-size: 13px;
+  color: #ededed;
+}
+
+.monolith-user-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.monolith-btn-signout {
+  background: transparent;
+  border: none;
+  color: #888ea0;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+.monolith-btn-signout:hover {
+  color: #ffffff;
+}
+
 .btn-monolith-ghost {
   background: rgba(255, 255, 255, 0.05);
   color: #ffffff;

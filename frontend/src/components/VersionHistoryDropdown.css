@@ -1,0 +1,159 @@
+/* ─── Version History Dropdown ────────────────────────────────────────────── */
+
+.version-dropdown-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.version-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e4e4e7;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.version-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.version-arrow {
+  transition: transform 0.2s ease;
+}
+
+.version-arrow--open {
+  transform: rotate(180deg);
+}
+
+.version-menu-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+  width: 290px;
+  background: #111116;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+  z-index: 50;
+  padding: 8px 0;
+  animation: fadeIn 0.15s ease;
+}
+
+.version-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.version-menu-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.version-count-badge {
+  font-size: 11px;
+  color: #71717a;
+}
+
+.version-list-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.version-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  gap: 10px;
+  transition: background 0.15s ease;
+}
+
+.version-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.version-item--current {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.version-item-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.version-item-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.version-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.version-current-tag {
+  font-size: 9px;
+  font-weight: 800;
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
+.version-time {
+  font-size: 10px;
+  color: #71717a;
+  margin-left: auto;
+}
+
+.version-prompt-snippet {
+  font-size: 11px;
+  color: #a1a1aa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.version-restore-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.version-restore-btn:hover:not(:disabled) {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+}
+
+.version-restore-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
