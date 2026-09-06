@@ -1,0 +1,15 @@
+name = "blynkpages-keepalive"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+
+# Cron trigger: ping every 5 minutes, 24/7
+# Render free tier sleeps after 15 min of inactivity — 5 min interval guarantees it never sleeps.
+# Cloudflare Workers free tier: 100k requests/day. At 288 pings/day this is well within limits.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# BACKEND_URL is stored as a secret (not hardcoded here).
+# Set it once with: wrangler secret put BACKEND_URL
+# Value: https://blynkpage-backend.onrender.com
+#
+# [vars] — non-secret vars (not used here, BACKEND_URL is a secret)

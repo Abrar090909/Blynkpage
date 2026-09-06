@@ -131,14 +131,26 @@ def _build_generation_prompt(
     enhanced_brief: str | None = None,
     refinement_instruction: str | None = None,
     current_html: str | None = None,
+    brand_context: str | None = None,
 ) -> str:
     """
     Combine the versioned system prompt with the raw prompt and enhanced brief.
     If refinement_instruction is provided, append it and the current HTML.
+    If brand_context is provided (from Brand Memory retrieval), inject it as a
+    consistency block so the model stays aligned with past pages.
     """
     system_template = _load_system_prompt()
     brief_text = enhanced_brief or raw_prompt
     prompt = system_template.replace('{raw_prompt}', raw_prompt).replace('{enhanced_brief}', brief_text)
+
+    if brand_context:
+        prompt += (
+            f"\n\n# ─────────────────────────────────────────────────────────────────────────────\n"
+            f"# BRAND MEMORY — CONSISTENCY CONTEXT (from past pages on this project)\n"
+            f"# ─────────────────────────────────────────────────────────────────────────────\n"
+            f"{brand_context}\n"
+            f"Stay consistent with the above brand voice, offer framing, and headline style.\n"
+        )
 
     if refinement_instruction:
         prompt += (
@@ -160,13 +172,40 @@ def stream_generation(
     enhanced_brief: str | None = None,
     refinement_instruction: str | None = None,
     current_html: str | None = None,
+    project_id: str | None = None,
 ) -> Generator[str, None, None]:
     """
     Synchronous generator that streams HTML chunks from Gemini's streaming API in real time.
     Includes automatic model failover if one model hits quota or capacity limits.
+
+    If project_id is provided, retrieves brand memory from past generations and
+    injects it as a consistency block into the generation prompt (Use Case B).
     """
     client = _get_client()
-    prompt = _build_generation_prompt(raw_prompt, enhanced_brief, refinement_instruction, current_html)
+
+    # ── Brand Memory retrieval (Use Case B) ──────────────────────────────────
+    brand_context = None
+    if project_id and not refinement_instruction:
+        # Only on initial generation passes, not refinements (user intent is explicit then)
+        try:
+            from apps.rag.retrieval import retrieve_brand_memory, build_brand_context_block
+            memories = retrieve_brand_memory(
+                project_id=project_id,
+                query=enhanced_brief or raw_prompt,
+                top_k=3,
+            )
+            if memories:
+                brand_context = build_brand_context_block(memories)
+                logger.info(
+                    'Brand memory: injecting %d past page(s) into prompt for project %s',
+                    len(memories), project_id,
+                )
+        except Exception as e:
+            logger.warning('Brand memory retrieval failed (non-fatal): %s', e)
+
+    prompt = _build_generation_prompt(
+        raw_prompt, enhanced_brief, refinement_instruction, current_html, brand_context
+    )
     last_error = None
 
     for model_name in _get_model_candidates():

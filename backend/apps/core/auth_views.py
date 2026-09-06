@@ -32,24 +32,28 @@ REFRESH_COOKIE_NAME = 'blynk_refresh'
 REFRESH_COOKIE_MAX_AGE = 60 * 60 * 24 * 14  # 14 days
 # In DEBUG mode allow non-Secure cookie so localhost HTTP works
 _COOKIE_SECURE = not getattr(settings, 'DEBUG', True)
+# Cross-site: Vercel (frontend) → Render (backend) requires SameSite=None + Secure.
+# SameSite=Strict would silently drop the cookie on every cross-origin request,
+# meaning the refresh token is never sent and every page load looks like a logged-out state.
+_COOKIE_SAMESITE = 'None' if _COOKIE_SECURE else 'Lax'  # Lax for local dev (http)
 
 
 def _set_refresh_cookie(response, refresh_token_str: str):
-    """Attach the refresh token as an httpOnly, SameSite=Strict cookie."""
+    """Attach the refresh token as an httpOnly, SameSite=None cookie for cross-site auth."""
     response.set_cookie(
         REFRESH_COOKIE_NAME,
         refresh_token_str,
         max_age=REFRESH_COOKIE_MAX_AGE,
         httponly=True,
         secure=_COOKIE_SECURE,
-        samesite='Strict',
-        path='/api/auth/',  # Scoped: only sent on auth endpoint requests
+        samesite=_COOKIE_SAMESITE,
+        path='/',  # Must be / not /api/auth/ — the browser matches path prefix exactly
     )
 
 
 def _clear_refresh_cookie(response):
     """Delete the refresh cookie."""
-    response.delete_cookie(REFRESH_COOKIE_NAME, path='/api/auth/')
+    response.delete_cookie(REFRESH_COOKIE_NAME, path='/', samesite=_COOKIE_SAMESITE)
 
 
 class RegisterView(APIView):

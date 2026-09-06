@@ -21,6 +21,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from .models import Project, Generation, ChatMessage, PublishedPage
 from .gemini_service import enhance_prompt, stream_generation, strip_markdown_fences
 from .html_sanitizer import sanitize_for_publish, flag_compliance_issues
+from apps.rag.compliance_service import run_compliance_check
 
 logger = logging.getLogger(__name__)
 
@@ -312,6 +313,7 @@ class ProjectStreamView(APIView):
                     enhanced_brief=project.enhanced_brief,
                     refinement_instruction=refinement_instruction,
                     current_html=previous_html if is_refinement else None,
+                    project_id=str(project.id),
                 ):
                     if not chunk:
                         continue
@@ -338,6 +340,21 @@ class ProjectStreamView(APIView):
                         sub.increment_generation()
                     except Exception as sub_err:
                         logger.warning("Failed to increment subscription count: %s", sub_err)
+
+                # Store brand memory for future generations on this project (Use Case B)
+                try:
+                    import re as _re
+                    from apps.rag.retrieval import store_brand_memory
+                    # Extract the first H1 from the generated HTML as the headline
+                    _h1_match = _re.search(r'<h1[^>]*>(.*?)</h1>', full_html, _re.IGNORECASE | _re.DOTALL)
+                    _h1_text = _re.sub(r'<[^>]+>', '', _h1_match.group(1)).strip()[:500] if _h1_match else ''
+                    store_brand_memory(
+                        project_id=str(project.id),
+                        enhanced_brief=project.enhanced_brief,
+                        headline=_h1_text,
+                    )
+                except Exception as mem_err:
+                    logger.warning('Brand memory store failed (non-fatal): %s', mem_err)
 
                 project.status = Project.Status.READY
                 project.save(update_fields=['status', 'updated_at'])
@@ -491,4 +508,52 @@ class ProjectPublishView(APIView):
             'published_url': f'/p/{published.public_url_slug}',
             'public_url_slug': published.public_url_slug,
             'compliance_flags': compliance_flags,
+        }, status=status.HTTP_200_OK)
+
+
+# ─── POST /api/projects/<id>/compliance-check/ ─────────────────────────────────
+
+class ComplianceCheckView(APIView):
+    """
+    POST: Run a RAG-grounded compliance check on the current generation's HTML.
+
+    Returns a structured checklist with severity levels:
+      red    — blocks publish (clear policy violation)
+      yellow — requires explicit user acknowledgment
+      green  — no issues found
+
+    Results are cached per-generation so re-opening doesn't re-trigger Gemini calls.
+    Strictly verifies project ownership.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, project_id):
+        project = get_object_or_404(Project, id=project_id)
+        has_access, err_msg, err_code = verify_project_ownership(project, request.user)
+        if not has_access:
+            return Response({'error': err_msg}, status=err_code)
+
+        current_gen = project.generations.filter(is_current=True).first()
+        if not current_gen or not current_gen.html_output:
+            return Response(
+                {'error': 'No generated HTML to check. Generate a page first.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        results = run_compliance_check(
+            html=current_gen.html_output,
+            generation_id=str(current_gen.id),
+            project_id=str(project.id),
+        )
+
+        has_red = any(r.get('severity') == 'red' for r in results)
+        has_yellow = any(r.get('severity') == 'yellow' for r in results)
+
+        return Response({
+            'generation_id': str(current_gen.id),
+            'results': results,
+            'has_red_flags': has_red,
+            'has_yellow_flags': has_yellow,
+            'can_publish': not has_red,
+            'total_issues': len([r for r in results if r.get('severity') in ('red', 'yellow')]),
         }, status=status.HTTP_200_OK)

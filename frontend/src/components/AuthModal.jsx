@@ -10,6 +10,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin', onSu
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [wakingUp, setWakingUp] = useState(false)
 
   const { login, register } = useAuth()
 
@@ -35,6 +36,10 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin', onSu
     e.preventDefault()
     setError('')
     setIsLoading(true)
+    setWakingUp(false)
+
+    // Show "waking up" hint after 4 seconds if still loading (cold start)
+    const wakeTimer = setTimeout(() => setWakingUp(true), 4000)
 
     try {
       if (tab === 'signup') {
@@ -46,12 +51,16 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin', onSu
         await login(email, password)
       }
 
+      clearTimeout(wakeTimer)
       setIsLoading(false)
+      setWakingUp(false)
       onClose()
       if (onSuccess) onSuccess()
     } catch (err) {
+      clearTimeout(wakeTimer)
       setError(err.message || 'Authentication failed. Please check your credentials.')
       setIsLoading(false)
+      setWakingUp(false)
     }
   }
 
@@ -172,7 +181,7 @@ export default function AuthModal({ isOpen, onClose, defaultTab = 'signin', onSu
             {isLoading ? (
               <>
                 <span className="auth-spinner" />
-                <span>{tab === 'signup' ? 'Creating account…' : 'Signing in…'}</span>
+                <span>{wakingUp ? 'Waking server up…' : (tab === 'signup' ? 'Creating account…' : 'Signing in…')}</span>
               </>
             ) : (
               <span>{tab === 'signup' ? 'Create Account' : 'Sign In'}</span>

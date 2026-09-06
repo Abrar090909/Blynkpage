@@ -9,6 +9,7 @@ from .views import (
     ProjectStreamView,
     ProjectChatView,
     ProjectPublishView,
+    ComplianceCheckView,
 )
 from .pixel_views import PixelConfigView
 from .lead_views import ProjectLeadsListView, ProjectLeadsExportView
@@ -35,4 +36,6 @@ urlpatterns = [
     path('projects/<uuid:project_id>/custom-domain/verify/', ProjectCustomDomainVerifyView.as_view(), name='project-custom-domain-verify'),
     # Meta Pixel configuration
     path('account/pixel/', PixelConfigView.as_view(), name='account-pixel'),
+    # RAG compliance check (pre-publish policy review)
+    path('projects/<uuid:project_id>/compliance-check/', ComplianceCheckView.as_view(), name='project-compliance-check'),
 ]

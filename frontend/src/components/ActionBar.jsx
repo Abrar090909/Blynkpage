@@ -6,6 +6,7 @@ import { useState } from 'react'
 import PixelSettingsModal from './PixelSettingsModal'
 import OrdersDrawer from './OrdersDrawer'
 import CustomDomainModal from './CustomDomainModal'
+import ComplianceCheckModal from './ComplianceCheckModal'
 import './ActionBar.css'
 
 // Precision Action Bar SVG Icons
@@ -75,7 +76,6 @@ export default function ActionBar({ project, code, isStreaming, onPublish, onPro
   const [showPixelModal, setShowPixelModal] = useState(false)
   const [showOrdersDrawer, setShowOrdersDrawer] = useState(false)
   const [showDomainModal, setShowDomainModal] = useState(false)
-  const [complianceFlags, setComplianceFlags] = useState([])
   const [showComplianceModal, setShowComplianceModal] = useState(false)
 
   const showToast = (message, type = 'success') => {
@@ -85,16 +85,8 @@ export default function ActionBar({ project, code, isStreaming, onPublish, onPro
 
   const handlePublish = async () => {
     if (!code || isStreaming || isPublishing) return
-
-    // Check compliance flags before publishing
-    const flags = project?.compliance_flags || []
-    if (flags.length > 0) {
-      setComplianceFlags(flags)
-      setShowComplianceModal(true)
-      return
-    }
-
-    await doPublish()
+    // Always open the RAG compliance modal before publishing
+    setShowComplianceModal(true)
   }
 
   const doPublish = async () => {
@@ -103,10 +95,6 @@ export default function ActionBar({ project, code, isStreaming, onPublish, onPro
     try {
       const data = await onPublish()
       if (data.published_url) {
-        // Check if compliance flags came back from the publish response
-        if (data.compliance_flags?.length > 0) {
-          setComplianceFlags(data.compliance_flags)
-        }
         await onProjectUpdate()
         showToast(`Published → ${data.published_url}`)
       } else {
@@ -144,27 +132,21 @@ export default function ActionBar({ project, code, isStreaming, onPublish, onPro
 
   const isPublished = !!project?.published_url
   const hasCode = !!code
-  const hasFlags = (project?.compliance_flags || []).length > 0
 
   return (
     <>
       <div className="action-bar">
         <button
           id="action-publish"
-          className={`btn btn-sm action-btn ${isPublished ? 'btn-secondary' : 'btn-primary'} ${hasFlags ? 'action-btn--warn' : ''}`}
+          className={`btn btn-sm action-btn ${isPublished ? 'btn-secondary' : 'btn-primary'}`}
           onClick={handlePublish}
           disabled={!hasCode || isStreaming || isPublishing}
-          title={hasFlags ? 'Review AI-generated claims before publishing' : (isPublished ? 'Re-publish with latest version' : 'Publish to a live URL')}
+          title={isPublished ? 'Re-publish with latest version' : 'Check compliance & publish to a live URL'}
         >
           {isPublishing ? (
             <>
               <span className="apple-spinner" style={{ width: '12px', height: '12px', borderWidth: '1.5px' }} />
               Publishing…
-            </>
-          ) : hasFlags ? (
-            <>
-              <Icons.AlertTriangle size={13} />
-              Review & Publish
             </>
           ) : isPublished ? (
             <>
@@ -265,51 +247,13 @@ export default function ActionBar({ project, code, isStreaming, onPublish, onPro
         />
       )}
 
-      {/* Compliance Review Modal */}
+      {/* RAG Compliance Check Modal */}
       {showComplianceModal && (
-        <div className="compliance-overlay">
-          <div className="compliance-modal" role="dialog" aria-modal="true">
-            <div className="compliance-header">
-              <span className="compliance-icon" style={{ color: '#fbbf24' }}>
-                <Icons.AlertTriangle size={24} />
-              </span>
-              <div>
-                <h3>Review Before Publishing</h3>
-                <p>The AI generated claims that may need your attention before going live in a paid ad.</p>
-              </div>
-            </div>
-            <ul className="compliance-list">
-              {complianceFlags.map((flag, i) => (
-                <li key={i} className="compliance-item">
-                  <strong>{flag.type}</strong>
-                  <span>{flag.description}</span>
-                  {flag.matched_text && (
-                    <code className="compliance-match">"{flag.matched_text}"</code>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <p className="compliance-footer">
-              You can fix these in the chat, or acknowledge and publish anyway. Meta/FTC liability is yours as the advertiser.
-            </p>
-            <div className="compliance-actions">
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setShowComplianceModal(false)}
-              >
-                Fix in chat first
-              </button>
-              <button
-                id="compliance-publish-anyway"
-                className="btn btn-primary btn-sm"
-                onClick={doPublish}
-                disabled={isPublishing}
-              >
-                {isPublishing ? 'Publishing…' : 'Acknowledge & Publish'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ComplianceCheckModal
+          projectId={project?.id}
+          onClose={() => setShowComplianceModal(false)}
+          onPublish={doPublish}
+        />
       )}
     </>
   )

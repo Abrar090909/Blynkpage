@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'apps.pages',
     'apps.marketing',
     'apps.billing',
+    'apps.rag',
 ]
 
 MIDDLEWARE = [
@@ -163,9 +164,39 @@ GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-2.0-flash')
 # Per-user daily generation quota (plan tier enforcement)
 DAILY_GENERATION_QUOTA = config('DAILY_GENERATION_QUOTA', default=20, cast=int)
 
+# ─── RAG / pgvector ───────────────────────────────────────────────────────────
+# Set to True only when running on Postgres with the pgvector extension enabled.
+# When False (default), embedding vectors are stored as JSON text and cosine
+# similarity is computed in Python — correct but slower, fine for local dev.
+PGVECTOR_ENABLED = config('PGVECTOR_ENABLED', default=False, cast=bool)
+
 # ─── CORS ─────────────────────────────────────────────────────────────────────
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=True, cast=bool)
+# IMPORTANT: CORS_ALLOW_ALL_ORIGINS=True sets Access-Control-Allow-Origin: *
+# which browsers REFUSE to use with credentialed requests (cookies/Authorization).
+# We must use an explicit origin list when CORS_ALLOW_CREDENTIALS=True.
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False
+
+# Explicit allowed origins: Vercel preview + production + localhost dev
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+]
+
+# Regex to allow any *.vercel.app subdomain (covers preview deployments)
+# and any custom domain set via CORS_EXTRA_ORIGINS env var
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://[\w-]+\.vercel\.app$',
+    r'^https://blynkpages\.com$',
+    r'^https://www\.blynkpages\.com$',
+]
+
+# Allow additional origins via env var (comma-separated) for custom domains
+_extra_origins = config('CORS_EXTRA_ORIGINS', default='')
+if _extra_origins:
+    CORS_ALLOWED_ORIGINS += [o.strip() for o in _extra_origins.split(',') if o.strip()]
+
 # Needed so the browser sends httpOnly cookies cross-origin in development
 CORS_ALLOW_HEADERS = [
     'accept',

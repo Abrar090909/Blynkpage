@@ -17,6 +17,38 @@ import { API_BASE } from '../config'
 
 const AuthContext = createContext(null)
 
+/**
+ * fetchWithRetry — handles Render free-tier cold starts.
+ *
+ * The free instance sleeps after 15 min of inactivity and takes ~50s to wake.
+ * A plain fetch() will throw "Failed to fetch" during that window.
+ * This wrapper retries up to `maxAttempts` times with a delay, so the first
+ * request after a cold start succeeds instead of showing an error.
+ */
+async function fetchWithRetry(url, options = {}, maxAttempts = 3, delayMs = 5000) {
+  let lastError
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      // Add a generous timeout for the cold-start window (75s)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 75000)
+      try {
+        const res = await fetch(url, { ...options, signal: controller.signal })
+        clearTimeout(timeoutId)
+        return res
+      } finally {
+        clearTimeout(timeoutId)
+      }
+    } catch (err) {
+      lastError = err
+      if (attempt < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+    }
+  }
+  throw lastError
+}
+
 export function AuthProvider({ children }) {
   // Access token in memory ONLY — no localStorage
   const [token, setToken] = useState(null)
@@ -130,14 +162,14 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     let res
     try {
-      res = await fetch(`${API_BASE}/api/auth/login/`, {
+      res = await fetchWithRetry(`${API_BASE}/api/auth/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Receive and store the httpOnly cookie
         body: JSON.stringify({ email, password }),
       })
     } catch {
-      throw new Error('Unable to reach server. Please ensure the backend server is running.')
+      throw new Error('Server is starting up — please try again in a moment.')
     }
 
     const data = await res.json().catch(() => ({}))
@@ -162,14 +194,14 @@ export function AuthProvider({ children }) {
   const register = async (email, password, name = '') => {
     let res
     try {
-      res = await fetch(`${API_BASE}/api/auth/register/`, {
+      res = await fetchWithRetry(`${API_BASE}/api/auth/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Receive the httpOnly refresh cookie
         body: JSON.stringify({ email, password, name }),
       })
     } catch {
-      throw new Error('Unable to reach server. Please ensure the backend server is running.')
+      throw new Error('Server is starting up — please try again in a moment.')
     }
 
     const data = await res.json().catch(() => ({}))
