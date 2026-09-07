@@ -12,4 +12,5 @@ crons = ["*/5 * * * *"]
 # Set it once with: wrangler secret put BACKEND_URL
 # Value: https://blynkpage-backend.onrender.com
 #
-# [vars] — non-secret vars (not used here, BACKEND_URL is a secret)
+[vars]
+BACKEND_URL = "https://blynkpage-backend.onrender.com"
