@@ -1,35 +1,52 @@
 /**
- * AuthContext — JWT security hardened.
+ * AuthContext — Dual-layer JWT Security & Resilient Cross-Origin Auth.
  *
- * Security model:
- *   - Access token: stored in React state (memory) ONLY. Never written to localStorage,
- *     sessionStorage, or any JS-accessible storage. This means AI-generated pages
- *     in the preview iframe (even if malicious) cannot steal the token.
- *   - Refresh token: stored exclusively in an httpOnly, Secure, SameSite=Strict cookie
- *     set by the backend. JavaScript never sees it. The cookie is scoped to /api/auth/
- *     so it is only sent to auth endpoints.
- *   - Token refresh: calls POST /api/auth/refresh/ with no body — the browser
- *     automatically sends the httpOnly cookie; the backend returns a new access token.
- *   - Logout: calls POST /api/auth/logout/ which clears the cookie server-side.
+ * Security & Cross-Domain Architecture:
+ *   - Access Token: Stored in memory + localStorage fallback for cross-domain SPA (Vercel -> Render).
+ *   - Refresh Token: Set as httpOnly cookie by backend AND stored in localStorage as cross-origin fallback.
+ *     Modern browsers (Chrome, Safari ITP) block 3rd-party cross-site cookies by default.
+ *     Supporting both guarantees seamless auth whether cookies are allowed or blocked.
+ *   - TokenRef: Kept synchronously in sync so authFetch never suffers from stale React closures.
+ *   - Token Refresh: Calls POST /api/auth/refresh/ sending both credentials (cookie) and JSON body (refresh token).
+ *   - Cold-Start Resilient: fetchWithRetry handles Render free-tier spin-up delays gracefully.
  */
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { API_BASE } from '../config'
 
 const AuthContext = createContext(null)
 
+const getStoredToken = () => {
+  try {
+    return localStorage.getItem('blynk_access_token') || localStorage.getItem('access_token') || null
+  } catch {
+    return null
+  }
+}
+
+const getStoredUser = () => {
+  try {
+    const raw = localStorage.getItem('blynk_user')
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+const getStoredRefreshToken = () => {
+  try {
+    return localStorage.getItem('blynk_refresh_token') || null
+  } catch {
+    return null
+  }
+}
+
 /**
  * fetchWithRetry — handles Render free-tier cold starts.
- *
- * The free instance sleeps after 15 min of inactivity and takes ~50s to wake.
- * A plain fetch() will throw "Failed to fetch" during that window.
- * This wrapper retries up to `maxAttempts` times with a delay, so the first
- * request after a cold start succeeds instead of showing an error.
  */
 async function fetchWithRetry(url, options = {}, maxAttempts = 3, delayMs = 5000) {
   let lastError
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      // Add a generous timeout for the cold-start window (75s)
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 75000)
       try {
@@ -50,36 +67,75 @@ async function fetchWithRetry(url, options = {}, maxAttempts = 3, delayMs = 5000
 }
 
 export function AuthProvider({ children }) {
-  // Access token in memory ONLY — no localStorage
-  const [token, setToken] = useState(null)
-  const [user, setUser] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const refreshPromiseRef = useRef(null) // Deduplicate concurrent refresh calls
+  const [token, setToken] = useState(getStoredToken)
+  const [user, setUser] = useState(getStoredUser)
+  const [isLoading, setIsLoading] = useState(!getStoredToken())
+  const tokenRef = useRef(getStoredToken())
+  const refreshPromiseRef = useRef(null)
 
-  // Attempt to refresh access token using the httpOnly cookie
+  // Sync token state into ref
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
+
+  const persistAuth = (accessToken, refreshToken, userData) => {
+    try {
+      if (accessToken) {
+        localStorage.setItem('blynk_access_token', accessToken)
+        localStorage.setItem('access_token', accessToken)
+      }
+      if (refreshToken) {
+        localStorage.setItem('blynk_refresh_token', refreshToken)
+      }
+      if (userData) {
+        localStorage.setItem('blynk_user', JSON.stringify(userData))
+      }
+    } catch {}
+
+    if (accessToken) {
+      tokenRef.current = accessToken
+      setToken(accessToken)
+    }
+    if (userData) {
+      setUser(userData)
+    }
+  }
+
+  const clearAuth = () => {
+    try {
+      localStorage.removeItem('blynk_access_token')
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('blynk_refresh_token')
+      localStorage.removeItem('blynk_user')
+    } catch {}
+    tokenRef.current = null
+    setToken(null)
+    setUser(null)
+  }
+
+  // Attempt to refresh access token using both cookie and stored refresh token
   const refreshAccessToken = useCallback(async () => {
-    // Deduplicate: if a refresh is already in-flight, return the same promise
     if (refreshPromiseRef.current) return refreshPromiseRef.current
 
     refreshPromiseRef.current = (async () => {
       try {
+        const storedRefresh = getStoredRefreshToken()
         const res = await fetch(`${API_BASE}/api/auth/refresh/`, {
           method: 'POST',
-          credentials: 'include', // Send the httpOnly cookie
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(storedRefresh ? { refresh: storedRefresh } : {}),
         })
         if (!res.ok) {
-          setToken(null)
-          setUser(null)
+          clearAuth()
           return null
         }
         const data = await res.json()
         if (data.access) {
-          setToken(data.access)
+          persistAuth(data.access, data.refresh, null)
           return data.access
         }
-        setToken(null)
-        setUser(null)
+        clearAuth()
         return null
       } catch {
         return null
@@ -93,7 +149,7 @@ export function AuthProvider({ children }) {
 
   // Authenticated fetch: attaches Bearer header, retries once after 401 with token refresh
   const authFetch = useCallback(async (url, options = {}) => {
-    const currentToken = token
+    const currentToken = tokenRef.current || token || getStoredToken()
     const headers = {
       ...options.headers,
       ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
@@ -112,10 +168,24 @@ export function AuthProvider({ children }) {
     return response
   }, [token, refreshAccessToken])
 
-  // On mount: try to silently restore session via refresh cookie
+  // On mount: restore or verify user session
   const loadUser = useCallback(async () => {
     try {
-      // First try to get a fresh access token via the httpOnly cookie
+      const activeToken = tokenRef.current || getStoredToken()
+      if (activeToken) {
+        const res = await fetch(`${API_BASE}/api/auth/me/`, {
+          headers: { Authorization: `Bearer ${activeToken}` },
+          credentials: 'include',
+        })
+        if (res.ok) {
+          const data = await res.json()
+          persistAuth(activeToken, null, data)
+          setIsLoading(false)
+          return
+        }
+      }
+
+      // If token expired or invalid, try refresh
       const newToken = await refreshAccessToken()
       if (!newToken) {
         setIsLoading(false)
@@ -128,13 +198,12 @@ export function AuthProvider({ children }) {
       })
       if (res.ok) {
         const data = await res.json()
-        setUser(data)
+        persistAuth(newToken, null, data)
       } else {
-        setToken(null)
-        setUser(null)
+        clearAuth()
       }
     } catch {
-      // Network error — don't log out, let the user retry
+      // Network error — keep existing stored state
     } finally {
       setIsLoading(false)
     }
@@ -144,28 +213,25 @@ export function AuthProvider({ children }) {
     loadUser()
   }, [loadUser])
 
-  // Logout: clears httpOnly cookie server-side + wipes in-memory token
+  // Logout: clears httpOnly cookie server-side + wipes local storage & in-memory token
   const logout = useCallback(async () => {
     try {
       await fetch(`${API_BASE}/api/auth/logout/`, {
         method: 'POST',
         credentials: 'include',
       })
-    } catch {
-      // Best-effort — still clear local state regardless
-    }
-    setToken(null)
-    setUser(null)
+    } catch {}
+    clearAuth()
   }, [])
 
-  // Login: returns access token in response body, refresh token is set as cookie by backend
+  // Login: returns access + refresh tokens, persists them
   const login = async (email, password) => {
     let res
     try {
       res = await fetchWithRetry(`${API_BASE}/api/auth/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Receive and store the httpOnly cookie
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       })
     } catch {
@@ -184,9 +250,11 @@ export function AuthProvider({ children }) {
       throw new Error(errorMsg)
     }
 
-    if (!data.tokens?.access) throw new Error('Invalid authentication response from server.')
-    setToken(data.tokens.access) // Store in memory only
-    setUser(data.user)
+    const access = data.tokens?.access
+    const refresh = data.tokens?.refresh
+    if (!access) throw new Error('Invalid authentication response from server.')
+
+    persistAuth(access, refresh, data.user)
     return data.user
   }
 
@@ -197,7 +265,7 @@ export function AuthProvider({ children }) {
       res = await fetchWithRetry(`${API_BASE}/api/auth/register/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Receive the httpOnly refresh cookie
+        credentials: 'include',
         body: JSON.stringify({ email, password, name }),
       })
     } catch {
@@ -217,9 +285,11 @@ export function AuthProvider({ children }) {
       throw new Error(errorMsg)
     }
 
-    if (!data.tokens?.access) throw new Error('Invalid registration response from server.')
-    setToken(data.tokens.access) // Store in memory only
-    setUser(data.user)
+    const access = data.tokens?.access
+    const refresh = data.tokens?.refresh
+    if (!access) throw new Error('Invalid registration response from server.')
+
+    persistAuth(access, refresh, data.user)
     return data.user
   }
 
@@ -249,4 +319,3 @@ export function useAuth() {
   }
   return context
 }
-

@@ -136,6 +136,13 @@ export default function MarketingPage() {
       })
 
       if (!res.ok) {
+        if (res.status === 401) {
+          setIsLoading(false)
+          setPendingPrompt(textToSubmit)
+          setAuthTab('signin')
+          setIsAuthOpen(true)
+          return
+        }
         const data = await res.json().catch(() => ({}))
         throw new Error(data.error || `Server error ${res.status}`)
       }
@@ -157,7 +164,7 @@ export default function MarketingPage() {
     }
 
     // Zero-friction conversion: if not authenticated, pop auth modal and continue seamlessly
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       setPendingPrompt(trimmed)
       setAuthTab('signup')
       setIsAuthOpen(true)

@@ -79,7 +79,7 @@ class RegisterView(APIView):
             'user': user_data,
             'tokens': {
                 'access': str(refresh.access_token),
-                # Refresh token is NOT in the body — it is set as an httpOnly cookie.
+                'refresh': str(refresh),
             },
         }, status=status.HTTP_201_CREATED)
         _set_refresh_cookie(response, str(refresh))
@@ -89,7 +89,7 @@ class RegisterView(APIView):
 class LoginView(APIView):
     """
     POST /api/auth/login/
-    Authenticates user. Returns access token in body; refresh set as httpOnly cookie.
+    Authenticates user. Returns access and refresh token in body, and sets httpOnly cookie.
     """
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
@@ -111,6 +111,7 @@ class LoginView(APIView):
             'user': user_data,
             'tokens': {
                 'access': str(refresh.access_token),
+                'refresh': str(refresh),
             },
         }, status=status.HTTP_200_OK)
         _set_refresh_cookie(response, str(refresh))
@@ -120,17 +121,16 @@ class LoginView(APIView):
 class CookieRefreshView(APIView):
     """
     POST /api/auth/refresh/
-    Reads the httpOnly refresh cookie and returns a new access token.
-    Replaces the simplejwt TokenRefreshView so the refresh token is never
-    exposed to JavaScript. The cookie is rotated on every successful refresh.
+    Reads refresh token from httpOnly cookie OR JSON body (cross-site fallback).
+    Returns new access token and rotated refresh token.
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
-        refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME)
+        refresh_token = request.COOKIES.get(REFRESH_COOKIE_NAME) or request.data.get('refresh')
         if not refresh_token:
             return Response(
-                {'detail': 'Refresh token cookie not present. Please log in again.'},
+                {'detail': 'Refresh token not present. Please log in again.'},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -145,14 +145,17 @@ class CookieRefreshView(APIView):
             _clear_refresh_cookie(response)
             return response
 
-        response = Response({'access': new_access}, status=status.HTTP_200_OK)
-        # Rotate: issue a new refresh token cookie
-        new_refresh = RefreshToken.for_user(token.payload.get('user_id') and
-                                            User.objects.filter(id=token.payload['user_id']).first()
-                                            or None)
-        if new_refresh:
+        data = {'access': new_access}
+        user_id = token.payload.get('user_id')
+        user = User.objects.filter(id=user_id).first() if user_id else None
+        if user:
+            new_refresh = RefreshToken.for_user(user)
+            data['refresh'] = str(new_refresh)
+            response = Response(data, status=status.HTTP_200_OK)
             _set_refresh_cookie(response, str(new_refresh))
-        return response
+            return response
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
