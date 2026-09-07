@@ -39,9 +39,8 @@ class AuthenticationTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertIn('tokens', res.data)
         self.assertIn('access', res.data['tokens'])
-        # Refresh token is now in an httpOnly cookie, NOT in the response body (security hardening)
-        self.assertNotIn('refresh', res.data.get('tokens', {}))
-        # Verify the httpOnly refresh cookie was set
+        self.assertIn('refresh', res.data['tokens'])
+        # Verify the httpOnly refresh cookie was also set
         self.assertIn('blynk_refresh', res.cookies)
         self.assertEqual(res.data['user']['email'], 'founder@startup.io')
         self.assertEqual(res.data['user']['first_name'], 'Alex Founder')
@@ -84,9 +83,9 @@ class AuthenticationTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         access_token = res.data['tokens']['access']
 
-        # Security hardening: refresh token is in an httpOnly cookie, not the response body
+        # Dual auth: refresh token is in httpOnly cookie AND response body for cross-site SPA
         self.assertIn('blynk_refresh', res.cookies)
-        self.assertNotIn('refresh', res.data.get('tokens', {}))
+        self.assertIn('refresh', res.data['tokens'])
 
         # Test cookie-based token refresh (no body params needed — browser sends cookie)
         refresh_res = self.client.post(self.refresh_url)
