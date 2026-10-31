@@ -1,6 +1,7 @@
 // Drains the queue. A failing event is attempted up to maxAttempts times in
 // total, then moved to the dead-letter store with the attempts it used.
 export async function drainQueue(queue, handleEvent, deadLetters, { maxAttempts = 3 } = {}) {
+  if (!Number.isInteger(maxAttempts) || maxAttempts < 1) throw new RangeError('maxAttempts must be a whole number of at least 1');
   let delivered = 0;
   while (queue.size > 0) {
     const event = queue.take();
