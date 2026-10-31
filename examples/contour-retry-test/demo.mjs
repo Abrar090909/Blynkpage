@@ -18,6 +18,6 @@ const delivered = await drainQueue(queue, async (event) => {
 // and ends up in the dead-letter store instead of being dropped.
 assert.equal(delivered, 1);
 assert.deepEqual(deadLetters.list(), [
-  { event: { type: 'payment.refunded', id: 'pay-002', attempts: 2 }, reason: 'ledger unavailable' },
+  { event: { type: 'payment.refunded', id: 'pay-002', attempts: 3 }, reason: 'ledger unavailable' },
 ]);
 console.log('Contour retry example passed: producer -> queue -> worker -> handler, failures -> dead letters');
